@@ -1,0 +1,54 @@
+DEVICE_PATH := device/zte/b760h
+
+# Platform
+TARGET_BOARD_PLATFORM := mt8127
+
+# Bootloader
+TARGET_NO_BOOTLOADER := true
+TARGET_BOOTLOADER_BOARD_NAME := mt8127
+
+# Architecture
+TARGET_ARCH		 	:= arm
+TARGET_ARCH_VARIANT	    := armv7-a-neon
+TARGET_ARCH_VARIANT_CPU := cortex-a7
+TARGET_CPU_ABI		    := armeabi-v7a
+TARGET_CPU_ABI2		    := armeabi
+TARGET_CPU_VARIANT	    := cortex-a7
+
+TARGET_CPU_MEMCPY_OPT_DISABLE	:= true
+TARGET_CPU_SMP			:= true
+ARCH_ARM_HAVE_NEON		:= true
+
+# Build system
+WITHOUT_CHECK_API := true
+
+# Filesystem
+BOARD_CACHEIMAGE_FILE_SYSTEM_TYPE := ext4
+BOARD_USERDATAIMAGE_FILE_SYSTEM_TYPE := ext4
+TARGET_USERIMAGES_USE_EXT4 := true
+BOARD_SYSTEMIMAGE_JOURNAL_SIZE := 0
+
+# Partitions
+BOARD_FLASH_BLOCK_SIZE := 131072
+BOARD_BOOTIMAGE_PARTITION_SIZE := 16777216
+BOARD_RECOVERYIMAGE_PARTITION_SIZE := 16777216
+BOARD_SYSTEMIMAGE_PARTITION_SIZE := 1073741824
+
+# Note: the data and cache partitions are swapped.
+# Better to have the larger partition be used for
+# user data than to let it stay mostly unused.
+BOARD_USERDATAIMAGE_PARTITION_SIZE := 1073741824
+BOARD_CACHEIMAGE_PARTITION_SIZE := 789577728
+
+# MTK
+BOARD_USES_MTK_HARDWARE := true
+
+# Camera
+USE_CAMERA_STUB := true
+
+# Bluetooth
+BOARD_HAVE_BLUETOOTH := true
+
+# SELinux
+BOARD_SEPOLICY_DIRS	+= $(DEVICE_PATH)/configs/sepolicy
+POLICYVERS 		:= 26

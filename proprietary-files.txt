@@ -1,0 +1,138 @@
+#
+# Graphics
+#
+
+lib/hw/hwcomposer.mt8127.so
+lib/hw/gralloc.mt8127.so
+
+lib/egl/libEGL_mali.so
+lib/egl/libGLESv1_CM_mali.so
+lib/egl/libGLESv2_mali.so
+
+lib/libaed.so
+-lib/libdpframework.so
+#lib/libm4u.so
+lib/libgccdemangle.so
+lib/libion.so
+lib/libMali.so
+lib/libstlport.so
+lib/libtz_uree.so
+lib/libbwc.so
+
+#
+# A/V
+#
+
+# Audio
+lib/libaudio.primary.default.so
+lib/libblisrc.so
+lib/libblisrc32.so
+lib/libspeech_enh_lib.so
+lib/libaudiocustparam.so
+lib/libaudiosetting.so
+lib/libaudiocompensationfilter.so
+lib/libcvsd_mtk.so
+lib/libmsbc_mtk.so
+lib/libaudiocomponentengine.so
+lib/libaudiodcrflt.so
+lib/libboxaudioutility.so
+lib/libaed.so
+lib/libmtk_drvb.so
+lib/libbessound_mtk.so
+lib/libbessound_hd_mtk.so
+lib/libmtklimiter.so
+lib/libmtkshifter.so
+
+# OMX
+bin/mfv_ut
+lib/libI420colorconvert.so
+lib/libstagefrighthw.so
+lib/libMtkOmxCore.so
+lib/libMtkOmxVdec.so
+lib/libMtkOmxVenc.so
+
+# OMX dependencies
+lib/libmemorydumper.so
+lib/libstagefright_memutil.so
+lib/libvcodecdrv.so
+lib/libvcodec_oal.so
+lib/libvcodec_utility.so
+lib/libmp4enc_sa.ca7.so
+lib/libvp8dec_sa.ca7.so
+lib/libvp9dec_sa.ca7.so
+lib/libvc1dec_sa.ca7.so
+lib/lib_uree_mtk_video_bonding_al.so
+lib/libpostprocessingFW.so
+lib/libmhalImageCodec.so
+lib/libJpgDecPipe.so
+lib/libJpgEncPipe.so
+lib/libmtkjpeg.so
+lib/libSwJpgCodec.so
+lib/libGdmaScalerPipe.so
+lib/libmmprofile.so
+lib/libsched.so
+
+# Widevine
+lib/libdrmmtkutil.so
+lib/libdrmmtkwhitelist.so
+lib/libssl.so:lib/libwvssl.so
+lib/libcrypto.so:lib/libwvcrypto.so
+vendor/lib/libwvdrm_L3.so
+vendor/lib/libwvm.so
+vendor/lib/libWVStreamControlAPI_L3.so
+vendor/lib/drm/libdrmwvmplugin.so
+vendor/lib/mediadrm/libwvdrmengine.so
+
+# HDMI/composite
+lib/libmtkhdmi_jni.so
+lib/libmtkcfgmanager_jni.so
+
+#
+# Radios
+#
+
+# WiFi
+bin/6620_launcher
+bin/wmt_loader
+
+# Firmware
+etc/firmware/mt6571_patch_e1_0_hdr.bin
+etc/firmware/mt6571_patch_e1_1_hdr.bin
+etc/firmware/S_ANDRO_SFL.ini
+etc/firmware/WIFI_RAM_CODE
+etc/firmware/WIFI_RAM_CODE_8127
+etc/firmware/WIFI_RAM_CODE_E6
+etc/firmware/WIFI_RAM_CODE_MT6628
+etc/firmware/WIFI_RAM_CODE_MT6630
+etc/firmware/WMT_SOC.cfg
+
+etc/wifi/p2p_supplicant_overlay.conf
+etc/wifi/wpa_supplicant.conf
+etc/wifi/wpa_supplicant_overlay.conf
+
+# Bluetooth
+lib/libbluetoothdrv.so
+lib/libbluetooth_mtk.so
+
+#
+# NVRAM
+#
+
+bin/nvram_daemon
+lib/libnvram.so
+lib/libnvram_sec.so
+lib/libcustom_nvram.so
+lib/libfile_op.so
+lib/libnvram_daemon_callback.so
+lib/libnvram_platform.so
+lib/libnvramagentclient.so
+lib/libhwm.so
+
+#
+# Other
+#
+
+# Debugging
+bin/drvbd
+bin/aee_aed
+lib/libcorkscrew.so

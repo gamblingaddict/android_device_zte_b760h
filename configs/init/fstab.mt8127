@@ -1,0 +1,19 @@
+# Android fstab file.
+#<src>			<mnt_point>	<type>	<mnt_flags and options>			<fs_mgr_flags>
+
+/dev/block/mmcblk0p5	/system		ext4	ro					wait
+/dev/block/mmcblk0p7	/cache		ext4	noatime,nosuid,nodev,noauto_da_alloc	wait,check
+/dev/block/mmcblk0p6	/data		ext4	noatime,nosuid,nodev,noauto_da_alloc	wait,check,encryptable=footer
+
+# Dumchar
+/dev/bootimg            /boot		emmc	defaults    recoveryonly
+/dev/recovery           /recovery	emmc	defaults    recoveryonly
+/dev/nvram              /nvram		emmc	defaults    recoveryonly
+
+# ZRAM
+/dev/block/zram0	    none		swap	defaults    zramsize=536870912
+
+# Vold-managed volumes ("block device" is actually a sysfs devpath)
+/devices/platform/mtk-msdc.0/mmc_host*	auto	vfat	defaults	voldmanaged=sdcard0:8,nonremovable,noemulatedsd
+/devices/platform/mtk-msdc.1/mmc_host*	auto	auto	defaults	voldmanaged=sdcard1:auto,encryptable=userdata
+/devices/platform/mt_usb*		        auto	auto	defaults	voldmanaged=usb:auto

@@ -1,0 +1,212 @@
+on early-init
+    mount debugfs /sys/kernel/debug /sys/kernel/debug
+
+    chown root system /proc/lk_env
+    chmod 0660 /proc/lk_env
+
+    # Stops the device from rebooting after a bit.
+    # https://kujadi-tahu.blogspot.com/2019/07/mengobrak-abrik-stb-jadul-zte-b700v5.html?showComment=1593949249247&m=1#c2449595630486194062
+    write /proc/net/monitor 0
+
+on init
+    setprop ro.vold.primary_physical 1
+
+on fs
+    mount_all /fstab.mt8127
+
+    setprop ro.config.size_override 1920,1080
+
+on post-fs    
+    # change owner
+    chown root system /proc/bootprof
+    chown root system /proc/mtprof/cputime
+
+    # change key_provisioning 
+    mkdir /data/key_provisioning
+    chmod 0770 /data/key_provisioning
+    chown system system /data/key_provisioning 
+
+on post-fs-data
+    start hdmi_helper
+
+    mkdir /data/nvram 0771 system system
+    mkdir /data/nvram/md  0770 system system
+    mkdir /data/nvram/bt 2771 bluetooth bluetooth
+    mkdir /data/nvram/media 0771 media audio
+    mkdir /data/nvram/APCFG 0771 system system
+    mkdir /data/nvram/APCFG/APRDCL 0771 system system
+
+    # Allow writing to the kernel trace log.
+    chmod 0222 /sys/kernel/debug/tracing/trace_marker
+
+    # watch dog kicker
+    write /proc/wdk "0 20 30"
+
+    # RTC
+    mkdir /data/misc/rtc 0770 system system
+
+    # kpd
+    chown radio radio /sys/devices/platform/mtk-kpd/driver/kpd_call_state
+
+    # bluetooth
+    mkdir /data/@btmtk 0770 bluetooth net_bt
+    mkdir /data_ro/@btmtk 0770 bluetooth net_bt
+
+    # M4U
+    chmod 0664 /proc/M4U_device
+    chown media system /proc/M4U_device
+
+    #change partition permission
+    chmod 0640 /emmc@sec_ro
+    chown root system /emmc@sec_ro
+
+    # VideoCodec, cts should not 0777
+    exec /system/bin/mknod /dev/Vcodec c 160 0
+    chmod 0666 /dev/Vcodec
+    chown system media /dev/Vcodec
+
+    # Android SEC related device nodes
+    exec /system/bin/mknod /dev/sec c 182 0
+    chmod 0660 /dev/sec
+    chown root system /dev/sec
+
+    # Create char device file for WMT, GPS, BT, FM, WIFI
+    exec /system/bin/mknod /dev/wmtWifi c 153 0
+    exec /system/bin/mknod /dev/stpwmt c 190 0
+    exec /system/bin/mknod /dev/stpbt  c 192 0
+
+    chmod 0660 /dev/wmtWifi
+    chown system system /dev/wmtWifi
+
+    chmod 0660 /dev/stpwmt
+    chown system system /dev/stpwmt
+
+    chmod 0660 /dev/stpbt
+    chown bluetooth radio /dev/stpbt
+
+    chmod 0660 /sys/bus/platform/drivers/mem_bw_ctrl/concurrency_scenario
+    chown system media /sys/bus/platform/drivers/mem_bw_ctrl/concurrency_scenario
+
+    # Char device for BT 3.0 HS
+    exec /system/bin/mknod /dev/ampc0 c 151 0
+    chown bluetooth bluetooth /dev/ampc0
+    chmod 0660 /dev/ampc0
+
+    # WiFi
+    mkdir /data/misc/wifi 0770 wifi wifi
+    mkdir /data/misc/wifi/sockets 0770 wifi wifi
+    mkdir /data/misc/wpa_supplicant 0770 wifi wifi 
+    chown wifi wifi /data/misc/wifi
+
+on boot
+    # Thermal
+    chown system system /proc/wmt_tm/wmt_tm
+    chown system system /proc/wmt_tm/tm_pid
+    chown system system /proc/wmt_tm/tx_thro
+    chown system system /proc/wmt_tm/wmt_val
+    chown system system /proc/wmt_tm/wfd_stat
+
+    chmod 0660 /sys/power/autosleep
+
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor hotplug
+    write /sys/devices/system/cpu/cpufreq/hotplug/is_cpu_hotplug_disable 0
+
+    # wjh Permission of cpu_num_base
+    chown system system /sys/devices/system/cpu/cpufreq/hotplug/cpu_num_bsea 
+    chmod 0660 /sys/devices/system/cpu/cpufreq/hotplug/cpu_num_base
+
+    # Tweak background writeout
+    write /proc/sys/vm/dirty_expire_centisecs 100
+    write /proc/sys/vm/dirty_writeback_centisecs 300
+    write /proc/sys/vm/dirty_background_ratio  5
+
+    # Debugging additions
+    setprop service.adb.tcp.port 5555
+    start adbd
+    start console
+
+on property:sys.boot_completed=1
+    # Enable ZRAM on boot_complete
+    write /proc/sys/vm/swappiness 80
+    swapon_all /fstab.mt8127
+
+on early_property:ro.hardware=mt8127
+    setprop ro.mtk.hardware mt8127
+
+on property:persist.uartconsole.enable=1
+    write /proc/mtprintk 1
+
+on property:vold.decrypt=trigger_restart_framework
+    start nvram_daemon
+
+service nvram_daemon /system/bin/nvram_daemon
+    class main
+    group system
+    oneshot
+
+service ir_daemon /system/bin/ir_daemon
+    class main
+    user root
+    group root
+
+service debuggerd /system/bin/aee_aed
+    class main
+
+# What does this do?
+service drvbd /system/bin/logwrapper /system/bin/drvbd
+    class main
+    user system
+    group system
+
+service hdmi_helper /system/bin/hdmi_helper.sh
+    class main
+    user root
+    group root
+    disabled
+    oneshot
+
+service hdmi_daemon /system/bin/hdmi_daemon
+    class main
+    user root
+    group root
+
+#
+# Connectivity related services
+#
+
+on property:wlan.driver.status=ok
+    write /dev/wmtWifi "1"
+
+on property:wlan.driver.status=unloaded
+    write /dev/wmtWifi "0"
+
+service p2p_supplicant /system/bin/wpa_supplicant \
+    -iwlan0 -Dnl80211 -c/data/misc/wifi/wpa_supplicant.conf \
+    -I/system/etc/wifi/wpa_supplicant_overlay.conf -N \
+    -ip2p0 -Dnl80211 -c/data/misc/wifi/p2p_supplicant.conf -e/data/misc/wifi/entropy.bin -d \
+    -I/system/etc/wifi/p2p_supplicant_overlay.conf \
+    -O/data/misc/wifi/sockets -g@android:wpa_wlan0
+    class main
+    socket wpa_wlan0 dgram 660 wifi wifi
+    disabled
+    oneshot
+
+service wpa_supplicant /system/bin/wpa_supplicant \
+    -iwlan0 -Dnl80211 -c/data/misc/wifi/wpa_supplicant.conf -e/data/misc/wifi/entropy.bin -d \
+    -I/system/etc/wifi/wpa_supplicant_overlay.conf \
+    -O/data/misc/wifi/sockets -g@android:wpa_wlan0
+    class main
+    socket wpa_wlan0 dgram 660 wifi wifi
+    disabled
+    oneshot
+
+service wmtLoader /system/bin/logwrapper /system/bin/wmt_loader
+    user root
+    group root
+    class main
+    oneshot
+
+service conn_launcher /system/bin/logwrapper /system/bin/6620_launcher -p /system/etc/firmware/
+    user system
+    group system
+    class core

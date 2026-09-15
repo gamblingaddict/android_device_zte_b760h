@@ -1,0 +1,191 @@
+# change partition permission
+/dev/preloader              0640    root    system
+/dev/bootimg                0640    root    system
+/dev/recovery               0640    root    system
+/dev/sec_ro                 0640    root    system
+/dev/kb                     0660    root    system
+/dev/dkb                    0660    root    system
+/dev/seccfg                 0660    root    system
+/dev/pro_info               0660    root    system
+/dev/logo                   0660    root    system
+/dev/otp                    0660    root    radio
+/dev/nvram                  0660    root    system
+/dev/ztecfg                 0777	system  system
+/dev/misc                   0660    root    system
+/dev/misc2                  0660    root    system
+/dev/block/mmcblk0          0660    root    system
+/dev/block/mmcblk0boot0     0660    root    system
+
+# change misc-sd to 0660 root system
+/dev/misc-sd                0660    root    system
+
+# webcam
+/dev/video0                 0660    system  camera
+/dev/video1                 0660    system  camera
+/dev/video2                 0660    system  camera
+
+# add the read write right of ttyUSB*
+/dev/bus/usb/*              0660    root    usb
+/dev/ttyUSB0                0660    radio   radio
+/dev/ttyUSB1                0660    radio   radio
+/dev/ttyUSB2                0660    radio   radio
+/dev/ttyUSB3                0660    radio   radio
+/dev/ttyUSB4                0660    radio   radio
+
+# Anyone can read the logs, but if they're not in the "logs"
+# group, then they'll only see log entries for their UID.
+/dev/xLog                   0600    root    root
+/dev/log/ksystem            0600    root    log
+
+# the DIAG device node is not world writable/readable.
+/dev/diag                   0660    radio   radio
+
+/dev/ccci*                  0660    radio   radio
+/dev/ttyC*                  0660    radio   radio
+/dev/eemcs*                 0660    radio   radio
+
+/sys/kernel/ccci    modem_info  0644    radio   radio
+/sys/kernel/ccci    md1_postfix 0644    radio   radio
+/sys/kernel/ccci    md2_postfix 0644    radio   radio
+
+# SGX device node
+/dev/pvrsrvkm               0666    root    root
+/dev/pvr_sync               0666    root    root
+
+#Change ION driver permission
+/dev/ion                    0644    system  system
+
+# give system access to rfkill device node
+/dev/rfkill                 0660	root    root
+
+/dev/pmem_multimedia        0660	root    root
+
+# set ptmx group to non-root
+/dev/ptmx                   0666	root    radio
+
+# RTC
+/dev/rtc0                   0660	system  system
+
+/dev/graphics/fb0           0660	system  graphics
+/dev/mtkfb_vsync            0660	system  graphics
+/dev/sw_sync                0660	system  graphics
+
+# device info /proc interface
+/dev/devmap                 0440	root    system
+
+# BT relayer mode used VCOM
+/dev/ttyGS2                 0660	bluetooth	radio
+/dev/hid-keyboard           0660	bluetooth	bluetooth
+
+# Use uinput's default permission
+/dev/uinput                 0660	system  bluetooth
+
+# UIBC
+/dev/uibc                   0660	system  media
+
+# TV-out
+/dev/TV-out                 0664	root    root
+
+# HDMI
+/dev/hdmitx                 0664	media   system
+
+# CVBS
+/dev/cvbs                   0664	media   system
+
+# JPEG
+/dev/mtk_jpeg               0440	system  camera
+
+# ALMK
+/dev/mtk_almk               0660	root    root
+
+# DISP
+/dev/mtk_disp               0660	system  system
+/dev/mtk_ovl                0660	system  system
+
+# RT Monitor
+/dev/RT_Monitor             0600	system  system
+
+# MATV
+/dev/MATV                   0660	system  media
+
+# otg_test
+/dev/mt_otg_test            0660	root    radio
+
+# MDP
+/dev/mt-mdp                 0660	system  media
+
+# G2D
+/dev/mtkg2d                 0660	system  media
+
+# SMI
+/dev/MTK_SMI                0666	system  media
+
+# mtk_sched
+/dev/mtk_sched              0660	system  media
+   
+# BT SCO CVSD, for MT6572 and MT6582 CVSD codec on AP 
+/dev/ebc                    0660	system  media
+
+/dev/uio0                   0666	root    root
+
+# ir device  	
+/dev/ir_dev                 0660	system  system
+
+# CVBS/SPDIF
+/dev/bdctrl                 0660	system  system
+
+#/dev/ttyMT2 for Connectivity BT/FM/GPS usage
+/dev/ttyMT*                 0660	system  system
+
+# Create char device file for WMT, GPS, BT, FM, WIFI
+/dev/wmtdetect              0660	system  system
+
+# define device for EMCSMDLOGGER
+/dev/ttyGS3                 0660	system  radio
+
+# Define device for ATCID
+/dev/ttyGS0                 0660	system  root
+/dev/ttyGS1                 0660	system  root
+
+# LEDs
+/sys/devices/platform/leds-mt65xx/leds/green    delay_on    0664    system    system
+/sys/devices/platform/leds-mt65xx/leds/green    delay_off   0664    system    system
+/sys/devices/platform/leds-mt65xx/leds/red      delay_on    0664    system    system
+/sys/devices/platform/leds-mt65xx/leds/red      delay_off   0664    system    system
+/sys/devices/platform/leds-mt65xx/leds/blue     delay_on    0664    system    system
+/sys/devices/platform/leds-mt65xx/leds/blue     delay_off   0664    system    system
+
+# NFC device
+/dev/msr3110                0666	root    root
+/dev/mt6605                 0660	nfc     radio
+
+# GPS
+/dev/gps                    0660	gps     system
+
+# GPIO
+/dev/mtgpio                 0660	radio   system
+
+# MTK BTIF driver
+/dev/btif                   0600	system  system
+
+# FOR VIA MODEM
+/dev/ttySDIO*               0660	radio   sdcard_rw
+/dev/ttyRB*                 0660	radio   radio
+
+# Mali node
+/dev/mali                   0666	system  graphics
+
+# MTK In-House TEE
+/dev/trustzone              0660	root    drmrpc
+/dev/tzmem                  0660	root    drmrpc
+
+# touch
+/dev/touch                  0660	root    system
+/dev/hotknot                0660	root    system
+
+# powerkey monitor hang
+/dev/kick_powerkey          0600   system   system
+
+# HDMI/composite states
+/sys/devices/virtual/switch/*    state   0664    system  system
+/sys/devices/virtual/switch/*    uevent  0664    system  system
