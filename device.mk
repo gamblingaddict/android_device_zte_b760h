@@ -25,6 +25,29 @@ PRODUCT_COPY_FILES += \
 PRODUCT_COPY_FILES += \
     $(call find-copy-subdir-files,*,${DEVICE_PATH}/configs/init,root)
 
+# WiFi
+PRODUCT_PACKAGES += \
+    libwpa_client \
+    hostapd \
+    wpa_supplicant \
+    wpa_supplicant.conf \
+    wificond
+
+# Bluetooth
+PRODUCT_PACKAGES += \
+     libbt-vendor
+
+# Audio
+PRODUCT_PACKAGES += \
+    audio.primary.mt8127 \
+    audio.a2dp.default \
+    audio_policy.default \
+    audio_policy.stub \
+    audio.r_submix.default \
+    audio.usb.default \
+    audio.primary.default \
+    libaudio-resampler
+
 # Root
 PRODUCT_PACKAGES += \
     su

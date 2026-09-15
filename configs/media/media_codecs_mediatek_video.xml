@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Copyright (C) 2012 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+
+<!-- 2012/07/13 config for MTK OMX Media Codecs, created by Morris Yang (mtk03147) -->
+
+<MediaCodecs>
+    <Decoders>
+        <MediaCodec name="OMX.MTK.VIDEO.DECODER.AVC" type="video/avc" >
+            <Limit name="size" min="64x64" max="1920x1088" />
+            <Feature name="adaptive-playback" />
+        </MediaCodec>
+        <!--MediaCodec name="OMX.MTK.VIDEO.DECODER.HEVC" type="video/hevc" >
+            <Limit name="size" min="129x65" max="1920x1088" />
+        </MediaCodec-->
+        <!--MediaCodec name="OMX.MTK.VIDEO.DECODER.MPEG4" type="video/mp4v-es">
+            <Limit name="size" min="16x16" max="1920x1088" />
+        </MediaCodec>
+        <MediaCodec name="OMX.MTK.VIDEO.DECODER.H263" type="video/3gpp">
+            <Limit name="size" min="16x16" max="1920x1088" />
+        </MediaCodec-->
+
+        <!--MediaCodec name="OMX.MTK.VIDEO.DECODER.VPX" type="video/x-vnd.on2.vp8" />
+        <MediaCodec name="OMX.MTK.VIDEO.DECODER.VC1" type="video/x-ms-wmv" />
+        <MediaCodec name="OMX.MTK.VIDEO.DECODER.DIVX" type="video/divx" />
+        <MediaCodec name="OMX.MTK.VIDEO.DECODER.DIVX3" type="video/divx3" />
+        <MediaCodec name="OMX.MTK.VIDEO.DECODER.XVID" type="video/xvid" />
+        <MediaCodec name="OMX.MTK.VIDEO.DECODER.S263" type="video/flv1" />
+        <MediaCodec name="OMX.MTK.VIDEO.DECODER.MPEG2" type="video/mpeg2" />
+        <MediaCodec name="OMX.MTK.VIDEO.DECODER.MJPEG" type="video/x-motion-jpeg" />
+        <MediaCodec name="OMX.MTK.VIDEO.DECODER.RV9" type="video/vnd.rn-realvideo" />
+        <MediaCodec name="OMX.MTK.VIDEO.DECODER.RV" type="video/vnd.rn-realvideo8" /-->
+    </Decoders>
+
+    <!--Encoders>
+        <MediaCodec name="OMX.MTK.VIDEO.ENCODER.MPEG4" type="video/mp4v-es" >
+            <Quirk name="requires-allocate-on-input-ports" />
+            <Quirk name="requires-allocate-on-output-ports" />
+        </MediaCodec>
+        <MediaCodec name="OMX.MTK.VIDEO.ENCODER.H263" type="video/3gpp" >
+            <Quirk name="requires-allocate-on-input-ports" />
+            <Quirk name="requires-allocate-on-output-ports" />
+        </MediaCodec>
+        <MediaCodec name="OMX.MTK.VIDEO.ENCODER.AVC" type="video/avc" >
+            <Limit name="size" min="128x96" max="1920x1080" />
+            <Limit name="alignment" value="16x16" />
+            <Limit name="block-size" value="16x16" />
+            <Quirk name="requires-allocate-on-input-ports" />
+            <Quirk name="requires-allocate-on-output-ports" />
+        </MediaCodec>
+    </Encoders-->
+</MediaCodecs>
