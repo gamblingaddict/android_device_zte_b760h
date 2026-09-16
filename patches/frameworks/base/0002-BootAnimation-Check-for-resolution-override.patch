@@ -1,0 +1,61 @@
+From 1eb179f7c9ee2fe53431b37e01029bea813f8e3c Mon Sep 17 00:00:00 2001
+From: Aaron Kling <webgeek1234@gmail.com>
+Date: Fri, 7 Aug 2026 21:53:58 +0700
+Subject: [PATCH] BootAnimation: Check for resolution override
+
+Change-Id: Ib001ce767067e3789ea5957ac9b23ed416341d18
+---
+ cmds/bootanimation/BootAnimation.cpp | 26 +++++++++++++++++++++++++-
+ 1 file changed, 25 insertions(+), 1 deletion(-)
+
+diff --git a/cmds/bootanimation/BootAnimation.cpp b/cmds/bootanimation/BootAnimation.cpp
+index 10fabcfb..60f9df31 100644
+--- a/cmds/bootanimation/BootAnimation.cpp
++++ b/cmds/bootanimation/BootAnimation.cpp
+@@ -27,6 +27,7 @@
+ #include <utils/misc.h>
+ #include <signal.h>
+ #include <time.h>
++#include <inttypes.h>
+ 
+ #include <cutils/properties.h>
+ 
+@@ -268,11 +269,34 @@ status_t BootAnimation::readyToRun() {
+     if (status)
+         return -1;
+ 
++    char *endptr;
++    char sizeov[PROPERTY_VALUE_MAX];
++    property_get("ro.config.size_override", sizeov, "");
++    std::string size_override = sizeov;
++
++    struct resolution {
++        int width;
++        int height;
++    } resolution;
++
++    resolution.width = strtoimax(size_override.c_str(), &endptr, 10);
++    if (endptr[0] == ',')
++        resolution.height = strtoimax(endptr+1, NULL, 10);
++
++    if (resolution.width <= 0 || resolution.height <= 0) {
++        resolution.width = dinfo.w;
++        resolution.height = dinfo.h;
++    }
++
+     // create the native surface
+     sp<SurfaceControl> control = session()->createSurface(String8("BootAnimation"),
+-            dinfo.w, dinfo.h, PIXEL_FORMAT_RGB_565);
++            resolution.width, resolution.height, PIXEL_FORMAT_RGB_565);
+ 
+     SurfaceComposerClient::openGlobalTransaction();
++    // Scale forced resolution to physical resolution
++    Rect forcedRes(0, 0, resolution.width, resolution.height);
++    Rect physRes(0, 0, dinfo.w, dinfo.h);
++    SurfaceComposerClient::setDisplayProjection(dtoken, 0, forcedRes, physRes);
+     control->setLayer(0x40000000);
+     SurfaceComposerClient::closeGlobalTransaction();
+ 
+-- 
+2.43.0
+

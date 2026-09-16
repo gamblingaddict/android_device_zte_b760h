@@ -1,0 +1,35 @@
+From 6c9a8333b5a9c7df7e48c9cd78f3d0d4807a56fb Mon Sep 17 00:00:00 2001
+From: gamblingaddict <112048350+gamblingaddict@users.noreply.github.com>
+Date: Sun, 16 Aug 2026 19:46:55 +0700
+Subject: [PATCH] Disable fixed volume on HDMI
+
+Change-Id: I1a1d04a61b1241e737d6673d8be51b1324d03221
+---
+ services/core/java/com/android/server/audio/AudioService.java | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/services/core/java/com/android/server/audio/AudioService.java b/services/core/java/com/android/server/audio/AudioService.java
+index c717107d..ff3f6433 100644
+--- a/services/core/java/com/android/server/audio/AudioService.java
++++ b/services/core/java/com/android/server/audio/AudioService.java
+@@ -563,7 +563,7 @@ public class AudioService extends IAudioService.Stub {
+             = new RemoteCallbackList<IAudioRoutesObserver>();
+ 
+     // Devices for which the volume is fixed and VolumePanel slider should be disabled
+-    int mFixedVolumeDevices = AudioSystem.DEVICE_OUT_HDMI |
++    int mFixedVolumeDevices = //AudioSystem.DEVICE_OUT_HDMI |
+             AudioSystem.DEVICE_OUT_DGTL_DOCK_HEADSET |
+             AudioSystem.DEVICE_OUT_HDMI_ARC |
+             AudioSystem.DEVICE_OUT_SPDIF |
+@@ -5498,7 +5498,7 @@ public class AudioService extends IAudioService.Stub {
+                 }
+                 // Television devices without CEC service apply software volume on HDMI output
+                 if (isPlatformTelevision() && ((device & AudioSystem.DEVICE_OUT_HDMI) != 0)) {
+-                    mFixedVolumeDevices |= AudioSystem.DEVICE_OUT_HDMI;
++                    //mFixedVolumeDevices |= AudioSystem.DEVICE_OUT_HDMI;
+                     checkAllFixedVolumeDevices();
+                     if (mHdmiManager != null) {
+                         synchronized (mHdmiManager) {
+-- 
+2.43.0
+
