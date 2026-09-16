@@ -4,6 +4,10 @@ VENDOR_PATH := vendor/zte/b760h
 # Inherit the proprietary configuration.
 $(call inherit-product, $(VENDOR_PATH)/b760h-vendor.mk)
 
+# Dalvik/HWUI
+$(call inherit-product, frameworks/native/build/tablet-10in-xhdpi-2048-dalvik-heap.mk)
+$(call inherit-product-if-exists, frameworks/native/build/phone-xxhdpi-2048-hwui-memory.mk)
+
 # Boot animation
 TARGET_BOOTANIMATION_MULTITHREAD_DECODE := true
 TARGET_SCREEN_WIDTH := 1920
