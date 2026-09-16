@@ -8,7 +8,7 @@ $(call inherit-product, vendor/cm/config/common_full_tv.mk)
 $(call inherit-product, device/zte/b760h/device.mk)
 
 # Product Name
-PRODUCT_NAME		:= cm_b760h
+PRODUCT_NAME		:= lineage_b760h
 
 # Device identifier. This must come after all inclusions.
 PRODUCT_DEVICE          := b760h
