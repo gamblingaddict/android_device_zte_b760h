@@ -59,6 +59,27 @@ BOARD_MKBOOTIMG_ARGS := \
     --ramdisk_offset 0x04000000 \
     --tags_offset 0x00000100
 
+# Recovery
+TARGET_RECOVERY_FSTAB	:= $(DEVICE_PATH)/configs/init/fstab.mt8127
+
+# Props
+TARGET_SYSTEM_PROP	:= $(DEVICE_PATH)/configs/props/system.prop
+
+# Malloc
+MALLOC_SVELTE := true
+
+# Fonts
+SMALLER_FONT_FOOTPRINT := true
+
+# Graphics
+USE_OPENGL_RENDERER := true
+BOARD_EGL_CFG := $(DEVICE_PATH)/configs/graphics/egl.cfg
+
+# Graphics quirks
+BOARD_EGL_NEEDS_HANDLE_VALUE := true
+BOARD_EGL_WORKAROUND_BUG_10194508 := true
+TARGET_REQUIRES_SYNCHRONOUS_SETSURFACE := true
+
 # MTK
 BOARD_USES_MTK_HARDWARE := true
 
