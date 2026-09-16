@@ -52,4 +52,7 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     su
 
+# Remote
+PRODUCT_PACKAGES += \
+    ir_daemon
 
