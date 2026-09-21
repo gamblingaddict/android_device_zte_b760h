@@ -1,0 +1,33 @@
+From 44165ba33e70da7c7fa4358617cc84d166308b0e Mon Sep 17 00:00:00 2001
+From: Wang Xuerui <idontknw.wang@gmail.com>
+Date: Sat, 19 Sep 2026 14:40:16 +0700
+Subject: [PATCH] init: Re-allow services without SELinux contexts defined
+
+Change-Id: I5af88284df9dd4934b4ecbc09c939e4f03a4f0a2
+---
+ init/service.cpp | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/init/service.cpp b/init/service.cpp
+index a5334f4..560c122 100644
+--- a/init/service.cpp
++++ b/init/service.cpp
+@@ -371,6 +371,7 @@ bool Service::Start() {
+             scon = ret_scon;
+             free(ret_scon);
+         }
++#if 0
+         if (rc == 0 && scon == mycon) {
+             ERROR("Service %s does not have a SELinux domain defined.\n", name_.c_str());
+             if (selinux_status_getenforce() > 0) {
+@@ -379,6 +380,7 @@ bool Service::Start() {
+                 return false;
+             }
+         }
++#endif
+         free(mycon);
+         free(fcon);
+         if (rc < 0) {
+-- 
+2.43.0
+

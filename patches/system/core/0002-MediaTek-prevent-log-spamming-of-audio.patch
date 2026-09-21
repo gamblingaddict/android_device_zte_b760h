@@ -1,0 +1,44 @@
+From c558c14e06594978f8debeb2d09baab1a6ec5683 Mon Sep 17 00:00:00 2001
+From: LineageOS-MTK <luzejij@binka.me>
+Date: Wed, 6 Sep 2017 02:52:45 +0300
+Subject: [PATCH] MediaTek: prevent log spamming of audio.
+
+Change-Id: I2bd1fad7cdba7f96f742b0e262165e8d35bcadbf
+---
+ liblog/logger_write.c | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/liblog/logger_write.c b/liblog/logger_write.c
+index c7b5a84..22c01d3 100644
+--- a/liblog/logger_write.c
++++ b/liblog/logger_write.c
+@@ -394,6 +394,26 @@ LIBLOG_ABI_PUBLIC int __android_log_buf_write(int bufID, int prio,
+     if (!tag)
+         tag = "";
+ 
++    // MediaTek: Prevent log spamming of audio.
++    if (!strcmp(tag, "AudioMTKFilterManager") ||
++        !strcmp(tag, "AudioMTKFilter") ||
++        !strcmp(tag, "AudioMTKStreamOut") ||
++        !strcmp(tag, "AudioVPWStreamIn") ||
++	    !strcmp(tag, "AudioDigitalControl") ||
++        !strcmp(tag, "AudioLoopbackController") ||
++	    !strcmp(tag, "AudioMTKVolumeController") ||
++        !strcmp(tag, "AudioDigitalControl") ||
++        !strcmp(tag, "AudioAnalogControl") ||
++        !strcmp(tag, "AudioAfeReg") ||
++        !strcmp(tag, "AudioAnalogReg") ||
++        !strcmp(tag, "AudioPlatformDevice") ||
++        !strcmp(tag, "AudioMachineDevice") ||
++        !strcmp(tag, "MtkAudioLoud") ||
++        !strcmp(tag, "LoopbackManager") ||
++        !strcmp(tag, "AudioInterConnection")) {
++             return 0;
++    }
++
+     /* XXX: This needs to go! */
+     if ((bufID != LOG_ID_RADIO) &&
+          (!strcmp(tag, "HTC_RIL") ||
+-- 
+2.43.0
+

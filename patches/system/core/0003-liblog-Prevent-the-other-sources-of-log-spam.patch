@@ -1,0 +1,37 @@
+From 99d0dd64bc0e96e41b304190a838296116e7603b Mon Sep 17 00:00:00 2001
+From: gamblingaddict <112048350+gamblingaddict@users.noreply.github.com>
+Date: Sat, 19 Sep 2026 15:06:02 +0700
+Subject: [PATCH] liblog: Prevent the other sources of log spam
+
+Change-Id: I4beeb5bd6e2e4d1ce40190f6612583fd0cee08ce
+---
+ liblog/logger_write.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/liblog/logger_write.c b/liblog/logger_write.c
+index 22c01d3..89d9677 100644
+--- a/liblog/logger_write.c
++++ b/liblog/logger_write.c
+@@ -414,6 +414,19 @@ LIBLOG_ABI_PUBLIC int __android_log_buf_write(int bufID, int prio,
+              return 0;
+     }
+ 
++    // Prevent the other sources of log spam:
++    if (!strcmp(tag, "LoadCastServiceInfoTask") ||
++        !strcmp(tag, "CastIdRetrievalTask") ||
++        !strcmp(tag, "StopWatch") ||
++        !strncmp(msg, "[HWC] prepare_", 14) ||
++        !strncmp(msg, "[HWC] primary", 13) ||
++        !strncmp(msg, "[BLIT] set deCoupleOvl", 22) ||
++        !strncmp(msg, "[BLIT] ovl(hw)", 14) ||
++        !strncmp(msg, "getIonDebugInfo_SF", 18) ||
++        !strcmp(tag, "NVRAM")) {
++            return 0;
++    }
++
+     /* XXX: This needs to go! */
+     if ((bufID != LOG_ID_RADIO) &&
+          (!strcmp(tag, "HTC_RIL") ||
+-- 
+2.43.0
+
