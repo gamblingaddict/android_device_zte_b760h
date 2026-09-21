@@ -63,3 +63,11 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     ir_daemon
 
+# Shims/stubs
+PRODUCT_PACKAGES += \
+    libshim_ui \
+    libshim_gui \
+    libshim_utils \
+    libshim_audio\
+    libshim_omx \
+    libshim_log
