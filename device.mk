@@ -8,6 +8,9 @@ $(call inherit-product, $(VENDOR_PATH)/b760h-vendor.mk)
 $(call inherit-product, frameworks/native/build/tablet-10in-xhdpi-2048-dalvik-heap.mk)
 $(call inherit-product-if-exists, frameworks/native/build/phone-xxhdpi-2048-hwui-memory.mk)
 
+# Gapps
+$(call inherit-product-if-exists, vendor/gapps/vendor.mk)
+
 # Boot animation
 TARGET_BOOTANIMATION_MULTITHREAD_DECODE := true
 TARGET_SCREEN_WIDTH := 1920
