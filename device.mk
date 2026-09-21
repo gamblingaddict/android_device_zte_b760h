@@ -71,3 +71,10 @@ PRODUCT_PACKAGES += \
     libshim_audio\
     libshim_omx \
     libshim_log
+
+# Extras
+PRODUCT_PACKAGES += \
+    DocumentsUI
+
+# Remove packages
+PRODUCT_PACKAGES += RemovePackages
