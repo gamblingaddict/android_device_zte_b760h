@@ -72,6 +72,10 @@ PRODUCT_PACKAGES += \
     libshim_omx \
     libshim_log
 
+# Dependencies
+PRODUCT_PACKAGES += \
+    libm4u
+
 # Extras
 PRODUCT_PACKAGES += \
     DocumentsUI
