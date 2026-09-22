@@ -78,7 +78,8 @@ PRODUCT_PACKAGES += \
 
 # Extras
 PRODUCT_PACKAGES += \
-    DocumentsUI
+    DocumentsUI \
+    WebViewGoogle
 
 # Remove packages
 PRODUCT_PACKAGES += RemovePackages
