@@ -83,6 +83,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     libm4u
 
+# Settings
+PRODUCT_PACKAGES += \
+    TvSettingsMTK
+
 # Extras
 PRODUCT_PACKAGES += \
     DocumentsUI \
