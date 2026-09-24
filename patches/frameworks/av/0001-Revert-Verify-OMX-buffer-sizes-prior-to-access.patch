@@ -1,0 +1,148 @@
+From 9ec95eb11e9bbce57ce82d049edc3b455acd7801 Mon Sep 17 00:00:00 2001
+From: gamblingaddict <112048350+gamblingaddict@users.noreply.github.com>
+Date: Mon, 21 Sep 2026 20:24:39 +0700
+Subject: [PATCH 1/6] Revert "Verify OMX buffer sizes prior to access"
+
+Commit 2720c8b094cfa58de314daa8e5e4fb4fa81fe3b2, for reference.
+The KK-era decoder doesn't like this change.
+
+Change-Id: If53396544889049a637689980c44fc1b6d9c3637
+---
+ media/libmedia/IOMX.cpp | 104 ++++++++++++----------------------------
+ 1 file changed, 30 insertions(+), 74 deletions(-)
+
+diff --git a/media/libmedia/IOMX.cpp b/media/libmedia/IOMX.cpp
+index 9474e30..1a1d6a0 100644
+--- a/media/libmedia/IOMX.cpp
++++ b/media/libmedia/IOMX.cpp
+@@ -18,8 +18,6 @@
+ #define LOG_TAG "IOMX"
+ #include <utils/Log.h>
+ 
+-#include <sys/mman.h>
+-
+ #include <binder/IMemory.h>
+ #include <binder/Parcel.h>
+ #include <media/IOMX.h>
+@@ -739,78 +737,38 @@ status_t BnOMX::onTransact(
+ 
+             size_t size = data.readInt64();
+ 
+-            status_t err = NOT_ENOUGH_DATA;
+-            void *params = NULL;
+-            size_t pageSize = 0;
+-            size_t allocSize = 0;
+-            bool isUsageBits = (index == (OMX_INDEXTYPE) OMX_IndexParamConsumerUsageBits);
+-            if ((isUsageBits && size < 4) ||
+-                    (!isUsageBits && code != SET_INTERNAL_OPTION && size < 8)) {
+-                // we expect the structure to contain at least the size and
+-                // version, 8 bytes total
+-                ALOGE("b/27207275 (%zu) (%d/%d)", size, int(index), int(code));
+-                android_errorWriteLog(0x534e4554, "27207275");
+-            } else {
+-                err = NO_MEMORY;
+-                pageSize = (size_t) sysconf(_SC_PAGE_SIZE);
+-                if (size > SIZE_MAX - (pageSize * 2)) {
+-                    ALOGE("requested param size too big");
++            status_t err = NO_MEMORY;
++            void *params = calloc(size, 1);
++            if (params) {
++                err = data.read(params, size);
++                if (err != OK) {
++                    android_errorWriteLog(0x534e4554, "26914474");
+                 } else {
+-                    allocSize = (size + pageSize * 2) & ~(pageSize - 1);
+-                    params = mmap(NULL, allocSize, PROT_READ | PROT_WRITE,
+-                            MAP_PRIVATE | MAP_ANONYMOUS, -1 /* fd */, 0 /* offset */);
+-                }
+-                if (params != MAP_FAILED) {
+-                    err = data.read(params, size);
+-                    if (err != OK) {
+-                        android_errorWriteLog(0x534e4554, "26914474");
+-                    } else {
+-                        err = NOT_ENOUGH_DATA;
+-                        OMX_U32 declaredSize = *(OMX_U32*)params;
+-                        if (code != SET_INTERNAL_OPTION &&
+-                                index != (OMX_INDEXTYPE) OMX_IndexParamConsumerUsageBits &&
+-                                declaredSize > size) {
+-                            // the buffer says it's bigger than it actually is
+-                            ALOGE("b/27207275 (%u/%zu)", declaredSize, size);
+-                            android_errorWriteLog(0x534e4554, "27207275");
+-                        } else {
+-                            // mark the last page as inaccessible, to avoid exploitation
+-                            // of codecs that access past the end of the allocation because
+-                            // they didn't check the size
+-                            if (mprotect((char*)params + allocSize - pageSize, pageSize,
+-                                    PROT_NONE) != 0) {
+-                                ALOGE("mprotect failed: %s", strerror(errno));
+-                            } else {
+-                                switch (code) {
+-                                    case GET_PARAMETER:
+-                                        err = getParameter(node, index, params, size);
+-                                        break;
+-                                    case SET_PARAMETER:
+-                                        AVMediaUtils::get()->readCustomParamData(index, params, size, &data);
+-                                        err = setParameter(node, index, params, size);
+-                                        break;
+-                                    case GET_CONFIG:
+-                                        err = getConfig(node, index, params, size);
+-                                        break;
+-                                    case SET_CONFIG:
+-                                        err = setConfig(node, index, params, size);
+-                                        break;
+-                                    case SET_INTERNAL_OPTION:
+-                                    {
+-                                        InternalOptionType type =
+-                                            (InternalOptionType)data.readInt32();
+-
+-                                        err = setInternalOption(node, index, type, params, size);
+-                                        break;
+-                                    }
+-                                    default:
+-                                        TRESPASS();
+-                            }
+-                            }
++                    switch (code) {
++                        case GET_PARAMETER:
++                            err = getParameter(node, index, params, size);
++                            break;
++                        case SET_PARAMETER:
++                            err = setParameter(node, index, params, size);
++                            break;
++                        case GET_CONFIG:
++                            err = getConfig(node, index, params, size);
++                            break;
++                        case SET_CONFIG:
++                            err = setConfig(node, index, params, size);
++                            break;
++                        case SET_INTERNAL_OPTION:
++                        {
++                            InternalOptionType type =
++                                (InternalOptionType)data.readInt32();
++
++                            err = setInternalOption(node, index, type, params, size);
++                            break;
+                         }
++
++                        default:
++                            TRESPASS();
+                     }
+-                } else {
+-                    ALOGE("couldn't map: %s", strerror(errno));
+                 }
+             }
+ 
+@@ -820,9 +778,7 @@ status_t BnOMX::onTransact(
+                 reply->write(params, size);
+             }
+ 
+-            if (params) {
+-                munmap(params, allocSize);
+-            }
++            free(params);
+             params = NULL;
+ 
+             return NO_ERROR;
+-- 
+2.43.0
+

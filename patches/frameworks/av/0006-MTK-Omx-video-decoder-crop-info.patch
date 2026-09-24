@@ -1,0 +1,36 @@
+From 48be103a4101f41f6aa181d6e566eb4237b4c68d Mon Sep 17 00:00:00 2001
+From: bilux <i.bilux@gmail.com>
+Date: Thu, 24 Sep 2026 13:46:35 +0700
+Subject: [PATCH 6/6] MTK Omx video decoder crop info
+
+Change-Id: I0b842c116a8e55e659f841b5c4da546e733d68eb
+Signed-off-by: bilux <i.bilux@gmail.com>
+---
+ media/libstagefright/ACodec.cpp | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/media/libstagefright/ACodec.cpp b/media/libstagefright/ACodec.cpp
+index 3aecd47..691fdc1 100644
+--- a/media/libstagefright/ACodec.cpp
++++ b/media/libstagefright/ACodec.cpp
+@@ -5190,6 +5190,17 @@ status_t ACodec::getPortFormat(OMX_U32 portIndex, sp<AMessage> &notify) {
+                             rect.nHeight = videoDef->nFrameHeight;
+                         }
+ 
++#ifdef MTK_HARDWARE
++						if (!strncmp(mComponentName.c_str(), "OMX.MTK.", 8)
++                                && mOMX->getConfig(mNode, (OMX_INDEXTYPE) 0x7f00001c, /* OMX_IndexVendorMtkOmxVdecGetCropInfo */
++								&rect, sizeof(rect)) != OK) {
++							rect.nLeft = 0;
++							rect.nTop = 0;
++							rect.nWidth = videoDef->nFrameWidth;
++							rect.nHeight = videoDef->nFrameHeight;
++						}
++#endif
++
+                         if (rect.nLeft < 0 ||
+                             rect.nTop < 0 ||
+                             rect.nLeft + rect.nWidth > videoDef->nFrameWidth ||
+-- 
+2.43.0
+

@@ -1,0 +1,59 @@
+From aaad7b3633255ce81548845f00cf3a16eb00f902 Mon Sep 17 00:00:00 2001
+From: gamblingaddict <112048350+gamblingaddict@users.noreply.github.com>
+Date: Tue, 22 Sep 2026 13:03:45 +0700
+Subject: [PATCH 3/6] Revert "Don't allow using or allocating a buffer after
+ the first state transition"
+
+This reverts commit edc128668ba90a3f70015c6194c26443a114ffe0.
+
+Change-Id: I4284844f583ef1d281b8abcbf75f5f94e6d6693c
+---
+ media/libstagefright/omx/OMXNodeInstance.cpp | 18 ------------------
+ 1 file changed, 18 deletions(-)
+
+diff --git a/media/libstagefright/omx/OMXNodeInstance.cpp b/media/libstagefright/omx/OMXNodeInstance.cpp
+index f1365c6..f963b3c 100644
+--- a/media/libstagefright/omx/OMXNodeInstance.cpp
++++ b/media/libstagefright/omx/OMXNodeInstance.cpp
+@@ -806,12 +806,6 @@ status_t OMXNodeInstance::useBuffer(
+         return BAD_VALUE;
+     }
+ 
+-    if (!mSailed) {
+-        ALOGE("b/35467458");
+-        android_errorWriteLog(0x534e4554, "35467458");
+-        return BAD_VALUE;
+-    }
+-
+     if (mMetadataType[portIndex] == kMetadataBufferTypeInvalid
+             && mGraphicBufferEnabled[portIndex]) {
+         ALOGE("b/62948670");
+@@ -1262,12 +1256,6 @@ status_t OMXNodeInstance::allocateSecureBuffer(
+ 
+     Mutex::Autolock autoLock(mLock);
+ 
+-    if (!mSailed) {
+-        ALOGE("b/35467458");
+-        android_errorWriteLog(0x534e4554, "35467458");
+-        return BAD_VALUE;
+-    }
+-
+     if (mSecureBufferType[portIndex] == kSecureBufferTypeUnknown) {
+         ALOGE("b/63522818");
+         android_errorWriteLog(0x534e4554, "63522818");
+@@ -1329,12 +1317,6 @@ status_t OMXNodeInstance::allocateBufferWithBackup(
+         return BAD_VALUE;
+     }
+ 
+-    if (!mSailed) {
+-        ALOGE("b/35467458");
+-        android_errorWriteLog(0x534e4554, "35467458");
+-        return BAD_VALUE;
+-    }
+-
+     if (mSecureBufferType[portIndex] != kSecureBufferTypeUnknown) {
+         ALOGE("b/63522818");
+         android_errorWriteLog(0x534e4554, "63522818");
+-- 
+2.43.0
+

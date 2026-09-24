@@ -1,0 +1,78 @@
+From 60101b3f934f25c8982b0b1894a22d307a5388e5 Mon Sep 17 00:00:00 2001
+From: Diogo Ferreira <defer@cyngn.com>
+Date: Tue, 22 Sep 2026 14:03:32 +0700
+Subject: [PATCH 5/6] mediatek: Port AV changes
+
+This ports the changes required to perform video decoding.
+
+The changes are ported from the mediatek BSP for mt6592
+with the minimum required feature set and confined to
+allow co-existance with changes from other vendors.
+
+Change-Id: I3709de0e5b9e4e0f68a71e182549e72a3dab26a7
+---
+ media/libstagefright/ACodec.cpp              | 14 ++++++++++++--
+ media/libstagefright/omx/OMXNodeInstance.cpp |  2 ++
+ 2 files changed, 14 insertions(+), 2 deletions(-)
+
+diff --git a/media/libstagefright/ACodec.cpp b/media/libstagefright/ACodec.cpp
+index fca548b..3aecd47 100644
+--- a/media/libstagefright/ACodec.cpp
++++ b/media/libstagefright/ACodec.cpp
+@@ -1016,6 +1016,9 @@ status_t ACodec::setupNativeWindowSizeFormatAndUsage(
+     status_t err = mOMX->getParameter(
+             mNode, OMX_IndexParamPortDefinition, &def, sizeof(def));
+ 
++    OMX_U32 frameWidth = def.format.video.nFrameWidth;
++    OMX_U32 frameHeight = def.format.video.nFrameHeight;
++
+     if (err != OK) {
+         return err;
+     }
+@@ -1034,6 +1037,13 @@ status_t ACodec::setupNativeWindowSizeFormatAndUsage(
+     }
+ 
+     usage |= kVideoGrallocUsage;
++#ifdef MTK_HARDWARE
++    if (!strncmp("OMX.MTK.", mComponentName.c_str(), 8)) {
++        usage |= (GRALLOC_USAGE_SW_WRITE_OFTEN | GRALLOC_USAGE_SW_READ_OFTEN);
++        frameWidth = def.format.video.nStride;
++        frameHeight = def.format.video.nSliceHeight;
++    }
++#endif
+     *finalUsage = usage;
+ 
+     memset(&mLastNativeWindowCrop, 0, sizeof(mLastNativeWindowCrop));
+@@ -1052,8 +1062,8 @@ status_t ACodec::setupNativeWindowSizeFormatAndUsage(
+     ALOGV("gralloc usage: %#x(OMX) => %#x(ACodec)", omxUsage, usage);
+     err = setNativeWindowSizeFormatAndUsage(
+             nativeWindow,
+-            def.format.video.nFrameWidth,
+-            def.format.video.nFrameHeight,
++            frameWidth,
++            frameHeight,
+ #ifdef USE_SAMSUNG_COLORFORMAT
+             eNativeColorFormat,
+ #elif defined(MTK_HARDWARE)
+diff --git a/media/libstagefright/omx/OMXNodeInstance.cpp b/media/libstagefright/omx/OMXNodeInstance.cpp
+index 99c006d..177e521 100644
+--- a/media/libstagefright/omx/OMXNodeInstance.cpp
++++ b/media/libstagefright/omx/OMXNodeInstance.cpp
+@@ -932,12 +932,14 @@ status_t OMXNodeInstance::useGraphicBuffer(
+ 
+     // See if the newer version of the extension is present.
+     OMX_INDEXTYPE index;
++#ifndef MTK_HARDWARE
+     if (OMX_GetExtensionIndex(
+             mHandle,
+             const_cast<OMX_STRING>("OMX.google.android.index.useAndroidNativeBuffer2"),
+             &index) == OMX_ErrorNone) {
+         return useGraphicBuffer2_l(portIndex, graphicBuffer, buffer);
+     }
++#endif
+ 
+     OMX_STRING name = const_cast<OMX_STRING>(
+         "OMX.google.android.index.useAndroidNativeBuffer");
+-- 
+2.43.0
+
