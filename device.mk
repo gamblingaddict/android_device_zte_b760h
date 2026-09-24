@@ -90,7 +90,8 @@ PRODUCT_PACKAGES += \
 # Extras
 PRODUCT_PACKAGES += \
     DocumentsUI \
-    WebViewGoogle
+    WebViewGoogle \
+    SetupWraith
 
 # Remove packages
 PRODUCT_PACKAGES += RemovePackages
