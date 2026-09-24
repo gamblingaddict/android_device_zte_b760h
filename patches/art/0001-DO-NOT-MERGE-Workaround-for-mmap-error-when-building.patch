@@ -1,0 +1,34 @@
+From ffbd04301543c644c090e25038f6d17a014e8312 Mon Sep 17 00:00:00 2001
+From: Ryo Hashimoto <hashimoto@google.com>
+Date: Thu, 24 Sep 2026 20:15:00 +0700
+Subject: [PATCH] DO NOT MERGE: Workaround for mmap error when building
+
+To fix errors which happen when building Android P on a workstation
+running Linux kernel 5.18.
+
+Bug: 235181357
+Test: build
+Change-Id: I92e5a7b84c8018d50c38ec386428e3191cd5600c
+---
+ runtime/mem_map.cc | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/runtime/mem_map.cc b/runtime/mem_map.cc
+index 20c6112..3aad786 100644
+--- a/runtime/mem_map.cc
++++ b/runtime/mem_map.cc
+@@ -393,6 +393,11 @@ MemMap* MemMap::MapFileAtAddress(uint8_t* expected_ptr,
+     DCHECK(ContainedWithinExistingMap(expected_ptr, byte_count, error_msg))
+         << ((error_msg != nullptr) ? *error_msg : std::string());
+     flags |= MAP_FIXED;
++#if !defined(ART_TARGET)
++  } else if (expected_ptr) {
++#define MAP_FIXED_NOREPLACE 0x100000
++    flags |= MAP_FIXED_NOREPLACE;
++#endif
+   } else {
+     CHECK_EQ(0, flags & MAP_FIXED);
+     // Don't bother checking for an overlapping region here. We'll
+-- 
+2.43.0
+
