@@ -19,8 +19,8 @@ define make_header
   perl -e 'print pack("a4 L a32 a472", "\x88\x16\x88\x58", $$ARGV[0], $$ARGV[1], "\xFF"x472)' $(1) $(2) > $(3)
 endef
 
-ZTE_BOOT_HEADER := device/zte/b760h/configs/boot/zte_boot_header.bin
-ZTE_RECOVERY_HEADER := device/zte/b760h/configs/boot/zte_recovery_header.bin
+ZTE_BOOT_HEADER := device/zte/b760h/configs/helpers/zte_boot_header.bin
+ZTE_RECOVERY_HEADER := device/zte/b760h/configs/helpers/zte_recovery_header.bin
 
 # this is overriding targets from build/core/Makefile
 $(INSTALLED_KERNEL_TARGET).mtk.header: $(INSTALLED_KERNEL_TARGET)

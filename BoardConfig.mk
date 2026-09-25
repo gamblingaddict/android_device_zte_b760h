@@ -55,7 +55,7 @@ BOARD_KERNEL_BASE := 0x80000000
 BOARD_KERNEL_PAGESIZE := 2048
 
 # Boot image config
-BOARD_CUSTOM_BOOTIMG_MK := $(DEVICE_PATH)/configs/boot/bootimg.mk
+BOARD_CUSTOM_BOOTIMG_MK := $(DEVICE_PATH)/configs/helpers/bootimg.mk
 BOARD_MKBOOTIMG_ARGS := \
     --base 0x80000000 \
     --pagesize 2048 \

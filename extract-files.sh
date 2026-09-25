@@ -51,7 +51,7 @@ fi
 # Initialize the helper
 setup_vendor "$DEVICE" "$VENDOR" "$CM_ROOT"
 
-extract "$MY_DIR"/proprietary-files.txt "$SRC"
+extract "$MY_DIR"/configs/helpers/proprietary-files.txt "$SRC"
 
 DEVICE_BLOB_ROOT="${CM_ROOT}"/vendor/"${VENDOR}"/"${DEVICE}"/proprietary
 
@@ -72,4 +72,4 @@ patchelf --replace-needed "libcrypto.so" "libwvcrypto.so" "${DEVICE_BLOB_ROOT}"/
 #patchelf --add-needed "libshim_stagefright.so" "${DEVICE_BLOB_ROOT}"/vendor/lib/libwvm.so
 patchelf --add-needed "libshim_icuuc.so" "${DEVICE_BLOB_ROOT}"/lib/libdrmmtkutil.so
 
-"$MY_DIR"/setup-makefiles.sh
+"$MY_DIR"/configs/helpers/setup-makefiles.sh
