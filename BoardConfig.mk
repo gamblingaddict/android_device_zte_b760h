@@ -74,7 +74,6 @@ MALLOC_SVELTE := true
 
 # Dexpreopt
 WITH_DEXPREOPT := true
-DONT_DEXPREOPT_PREBUILTS := true
 
 # Fonts
 SMALLER_FONT_FOOTPRINT := true
