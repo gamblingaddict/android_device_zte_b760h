@@ -19,7 +19,11 @@ LOCAL_OVERRIDES_PACKAGES := \
 	Camera2 \
 	Eleven \
 	ThemeChooser \
-	Gallery2
+	Gallery2 \
+	Recorder \
+	ExactCalculator \
+	Jelly \
+	PhotoTable
 
 LOCAL_UNINSTALLABLE_MODULE := true
 LOCAL_CERTIFICATE := PRESIGNED
