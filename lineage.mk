@@ -1,3 +1,6 @@
+# Wallpaper override
+DEVICE_PACKAGE_OVERLAYS += device/zte/b760h/configs/overlay/wallpaper
+
 # Inherit some common AOSP stuff.
 $(call inherit-product, device/google/atv/products/atv_base.mk)
 
