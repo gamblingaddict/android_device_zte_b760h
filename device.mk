@@ -9,12 +9,20 @@ $(call inherit-product, frameworks/native/build/tablet-10in-xhdpi-2048-dalvik-he
 $(call inherit-product-if-exists, frameworks/native/build/phone-xxhdpi-2048-hwui-memory.mk)
 
 # Gapps
-$(call inherit-product-if-exists, vendor/gapps/vendor.mk)
+$(call inherit-product-if-exists, vendor/gapps/arm_tvstock/arm_tvstock-vendor.mk)
+
+# Characteristics
+PRODUCT_CHARACTERISTICS := tv
+PRODUCT_SHIPPING_API_LEVEL := 19
 
 # Boot animation
 TARGET_BOOTANIMATION_MULTITHREAD_DECODE := true
 TARGET_SCREEN_WIDTH := 1920
 TARGET_SCREEN_HEIGHT := 1080
+
+# Overlays
+DEVICE_PACKAGE_OVERLAYS += \
+    $(DEVICE_PATH)/configs/overlay/tvmini
 
 # Permissions/features
 PERM_PATH := frameworks/native/data/etc
