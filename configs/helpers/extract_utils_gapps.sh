@@ -268,14 +268,14 @@ function write_packages() {
                 fi
             fi
             printf 'LOCAL_SRC_FILES := %s/%s\n' "$SRC" "$FILE"
-            local CERT=platform
+            local CERT=PRESIGNED
             if [ ! -z "$ARGS" ]; then
                 CERT="$ARGS"
             fi
             printf 'LOCAL_CERTIFICATE := %s\n' "$CERT"
         elif [ "$CLASS" = "JAVA_LIBRARIES" ]; then
             printf 'LOCAL_SRC_FILES := %s/framework/%s\n' "$SRC" "$FILE"
-            local CERT=platform
+            local CERT=PRESIGNED
             if [ ! -z "$ARGS" ]; then
                 CERT="$ARGS"
             fi
