@@ -22,7 +22,8 @@ TARGET_SCREEN_HEIGHT := 1080
 
 # Overlays
 DEVICE_PACKAGE_OVERLAYS += \
-    $(DEVICE_PATH)/configs/overlay/tvmini
+    $(DEVICE_PATH)/configs/overlay/tvmini \
+    $(DEVICE_PATH)/configs/overlay/device
 
 # Permissions/features
 PERM_PATH := frameworks/native/data/etc
