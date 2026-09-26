@@ -300,7 +300,8 @@ function write_packages() {
         fi
         printf 'LOCAL_MODULE_TAGS := optional\n'
         printf 'LOCAL_MODULE_CLASS := %s\n' "$CLASS"
-        if [ "$PKGNAME" = "PrebuiltGmsCorePano" ]; then
+        if [ "$PKGNAME" = "PrebuiltGmsCorePano" ] ||
+           [ "$PKGNAME" = "Tubesky" ]; then
             printf 'LOCAL_DEX_PREOPT := false\n'
         fi
         if [ ! -z "$EXTENSION" ]; then
