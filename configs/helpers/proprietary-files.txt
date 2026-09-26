@@ -127,12 +127,3 @@ lib/libnvram_daemon_callback.so
 lib/libnvram_platform.so
 lib/libnvramagentclient.so
 lib/libhwm.so
-
-#
-# Other
-#
-
-# Debugging
-bin/drvbd
-bin/aee_aed
-lib/libcorkscrew.so

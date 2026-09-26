@@ -81,6 +81,7 @@ PRODUCT_PACKAGES += \
 
 # Shims/stubs
 PRODUCT_PACKAGES += \
+    libcorkscrew \
     libshim_ui \
     libshim_gui \
     libshim_utils \

@@ -149,15 +149,6 @@ service ir_daemon /system/bin/ir_daemon
     user root
     group root
 
-service debuggerd /system/bin/aee_aed
-    class main
-
-# What does this do?
-service drvbd /system/bin/logwrapper /system/bin/drvbd
-    class main
-    user system
-    group system
-
 service hdmi_helper /system/bin/hdmi_helper.sh
     class main
     user root

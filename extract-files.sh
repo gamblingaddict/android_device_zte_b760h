@@ -58,10 +58,6 @@ DEVICE_BLOB_ROOT="${CM_ROOT}"/vendor/"${VENDOR}"/"${DEVICE}"/proprietary
 patchelf --add-needed "libshim_audio.so" "${DEVICE_BLOB_ROOT}"/lib/libaudio.primary.default.so
 patchelf --add-needed "libshim_log.so" "${DEVICE_BLOB_ROOT}"/lib/libaudio.primary.default.so
 
-# Reminder: libcorkscrew is required for the aee_aed service.
-patchelf --add-needed "libshim_utils.so" "${DEVICE_BLOB_ROOT}"/lib/libcorkscrew.so
-patchelf --add-needed "libshim_gui.so" "${DEVICE_BLOB_ROOT}"/lib/libcorkscrew.so
-
 patchelf --add-needed "libshim_omx.so" "${DEVICE_BLOB_ROOT}"/lib/libMtkOmxVdec.so
 patchelf --add-needed "libshim_omx.so" "${DEVICE_BLOB_ROOT}"/lib/libMtkOmxVenc.so
 patchelf --add-needed "libshim_ui.so" "${DEVICE_BLOB_ROOT}"/lib/libMtkOmxVenc.so
