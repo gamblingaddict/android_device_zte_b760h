@@ -8,6 +8,7 @@
 -app/AtvWidget/AtvWidget.apk
 -app/SecondScreenSetupAuthBridge/SecondScreenSetupAuthBridge.apk
 -app/GoogleContactsSyncAdapter/GoogleContactsSyncAdapter.apk
+-app/YouTubeLeanback/YouTubeLeanback.apk
 -priv-app/TV/TV.apk
 -priv-app/GoogleExtServices/GoogleExtServices.apk
 -priv-app/PrebuiltGmsCorePano/PrebuiltGmsCorePano.apk
