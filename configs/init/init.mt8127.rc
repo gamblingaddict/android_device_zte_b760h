@@ -149,14 +149,14 @@ service ir_daemon /system/bin/ir_daemon
     user root
     group root
 
-service hdmi_helper /system/bin/hdmi_helper.sh
+service hdmi_helper /vendor/bin/hdmi_helper.sh
     class main
     user root
     group root
     disabled
     oneshot
 
-service hdmi_daemon /system/bin/hdmi_daemon
+service hdmi_daemon /vendor/bin/hdmi_daemon
     class main
     user root
     group root

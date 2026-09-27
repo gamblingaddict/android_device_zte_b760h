@@ -79,6 +79,11 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     ir_daemon
 
+# HDMI
+PRODUCT_PACKAGES += \
+    hdmi_daemon \
+    hdmi_helper
+
 # Shims/stubs
 PRODUCT_PACKAGES += \
     libcorkscrew \
