@@ -44,8 +44,6 @@ lib/libmtklimiter.so
 lib/libmtkshifter.so
 
 # OMX
-bin/mfv_ut
-lib/libI420colorconvert.so
 lib/libstagefrighthw.so
 lib/libMtkOmxCore.so
 lib/libMtkOmxVdec.so

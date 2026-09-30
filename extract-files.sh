@@ -61,11 +61,5 @@ patchelf --add-needed "libshim_log.so" "${DEVICE_BLOB_ROOT}"/lib/libaudio.primar
 patchelf --add-needed "libshim_omx.so" "${DEVICE_BLOB_ROOT}"/lib/libMtkOmxVdec.so
 patchelf --add-needed "libshim_omx.so" "${DEVICE_BLOB_ROOT}"/lib/libMtkOmxVenc.so
 patchelf --add-needed "libshim_ui.so" "${DEVICE_BLOB_ROOT}"/lib/libMtkOmxVenc.so
-patchelf --add-needed "libshim_utils.so" "${DEVICE_BLOB_ROOT}"/lib/libI420colorconvert.so
-
-patchelf --replace-needed "libssl.so" "libwvssl.so" "${DEVICE_BLOB_ROOT}"/vendor/lib/libWVStreamControlAPI_L3.so
-patchelf --replace-needed "libcrypto.so" "libwvcrypto.so" "${DEVICE_BLOB_ROOT}"/vendor/lib/libWVStreamControlAPI_L3.so
-#patchelf --add-needed "libshim_stagefright.so" "${DEVICE_BLOB_ROOT}"/vendor/lib/libwvm.so
-patchelf --add-needed "libshim_icuuc.so" "${DEVICE_BLOB_ROOT}"/lib/libdrmmtkutil.so
 
 "$MY_DIR"/configs/helpers/setup-makefiles.sh
