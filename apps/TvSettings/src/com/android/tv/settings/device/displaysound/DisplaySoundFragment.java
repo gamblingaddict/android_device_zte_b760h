@@ -14,7 +14,7 @@
  * limitations under the License
  */
 
-package com.android.tv.settings.device.sound;
+package com.android.tv.settings.device.displaysound;
 
 import android.content.ContentResolver;
 import android.content.Context;
@@ -31,7 +31,7 @@ import android.text.TextUtils;
 
 import com.android.tv.settings.R;
 
-public class SoundFragment extends LeanbackPreferenceFragment implements
+public class DisplaySoundFragment extends LeanbackPreferenceFragment implements
         Preference.OnPreferenceChangeListener {
 
     private static final String KEY_SOUND_EFFECTS = "sound_effects";
@@ -43,8 +43,8 @@ public class SoundFragment extends LeanbackPreferenceFragment implements
 
     private AudioManager mAudioManager;
 
-    public static SoundFragment newInstance() {
-        return new SoundFragment();
+    public static DisplaySoundFragment newInstance() {
+        return new DisplaySoundFragment();
     }
 
     @Override
@@ -55,7 +55,7 @@ public class SoundFragment extends LeanbackPreferenceFragment implements
 
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
-        setPreferencesFromResource(R.xml.sound, null);
+        setPreferencesFromResource(R.xml.display_sound, null);
 
         final TwoStatePreference soundPref = (TwoStatePreference) findPreference(KEY_SOUND_EFFECTS);
         soundPref.setChecked(getSoundEffectsEnabled());

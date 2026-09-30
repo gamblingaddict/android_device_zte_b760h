@@ -37,10 +37,10 @@
             <intent android:action="com.google.android.settings.CAST_RECEIVER_SETTINGS" />
         </Preference>
         <Preference
-            android:icon="@drawable/ic_volume_up"
+            android:icon="@drawable/ic_display_sound"
             android:key="sound_effects"
-            android:title="@string/device_sound"
-            android:fragment="com.android.tv.settings.device.sound.SoundFragment" />
+            android:title="@string/device_display_sound"
+            android:fragment="com.android.tv.settings.device.displaysound.DisplaySoundFragment" />
         <Preference
             android:icon="@drawable/ic_adb"
             android:key="apps"

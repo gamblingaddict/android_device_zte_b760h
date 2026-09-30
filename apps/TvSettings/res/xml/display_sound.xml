@@ -16,7 +16,15 @@
   -->
 
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-    android:title="@string/device_sound">
+    android:title="@string/device_display_sound">
+
+    <PreferenceCategory
+        android:key="display_category"
+        android:title="@string/display_category_title" />
+
+    <PreferenceCategory
+        android:key="sound_category"
+        android:title="@string/device_sound" />
 
     <SwitchPreference
         android:key="sound_effects"

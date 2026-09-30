@@ -50,7 +50,6 @@ import com.android.tv.settings.accessories.BluetoothConnectionsManager;
 import com.android.tv.settings.accounts.AccountSyncFragment;
 import com.android.tv.settings.accounts.AddAccountWithTypeActivity;
 import com.android.tv.settings.connectivity.ConnectivityListener;
-import com.android.tv.settings.device.sound.SoundFragment;
 import com.android.tv.settings.system.SecurityFragment;
 
 import java.util.ArrayList;
@@ -168,7 +167,6 @@ public class MainFragment extends LeanbackPreferenceFragment {
         updateAccounts();
         updateAccessories();
         updateDeveloperOptions();
-        updateSounds();
         updateGoogleSettings();
 
         hideIfIntentUnhandled(findPreference(KEY_HOME_SETTINGS));
@@ -375,15 +373,6 @@ public class MainFragment extends LeanbackPreferenceFragment {
 
         final boolean developerEnabled = PreferenceUtils.isDeveloperEnabled(getContext());
         mDeveloperPref.setVisible(developerEnabled);
-    }
-
-    private void updateSounds() {
-        if (mSoundsPref == null) {
-            return;
-        }
-
-        mSoundsPref.setIcon(SoundFragment.getSoundEffectsEnabled(getContext().getContentResolver())
-                ? R.drawable.ic_volume_up : R.drawable.ic_volume_off);
     }
 
     private void updateWifi() {

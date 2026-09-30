@@ -90,6 +90,8 @@
     <string name="device_daydream">Screen saver</string>
     <!-- Preference which changes display settings. [CHAR LIMIT=50] -->
     <string name="device_display">Display</string>
+    <!-- Title for preference screen controlling display & sound settings. [CHAR LIMIT=50] -->
+    <string name="device_display_sound">Display &amp; Sound</string>
     <!-- Title for preference screen controlling sound settings [CHAR LIMIT=50] -->
     <string name="device_sound">Sound</string>
     <!-- Title for preference which controls surround sound passthrough function [CHAR LIMIT=50] -->
@@ -106,6 +108,15 @@
     <string name="device_reset">Factory data reset</string>
     <!-- Preference which sets the device's display calibration. [CHAR LIMIT=50] -->
     <string name="device_calibration">Calibration</string>
+
+    <!-- A category title for the settings related to display. [CHAR LIMIT=50] -->
+    <string name="display_category_title">Display</string>
+    <!-- Title for preference which when clicked lets the user configure advanced display settings. [CHAR LIMIT=50] -->
+    <string name="advanced_display_settings_title">Advanced display settings</string>
+    <!-- Title for preference which when clicked lets the user configure advanced sound settings. [CHAR LIMIT=50] -->
+    <string name="advanced_sound_settings_title">Advanced sound settings</string>
+    <!-- Title for preference to allow game mode for display. [CHAR LIMIT=50] -->
+    <string name="game_mode_title">Allow game mode</string>
 
         <!-- Title of dialog asking user to confirm before clearing all caches. [CHAR LIMIT=48] -->
     <string name="device_storage_clear_cache_title">Clear cached data?</string>
