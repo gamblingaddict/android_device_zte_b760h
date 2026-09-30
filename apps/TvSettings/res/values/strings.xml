@@ -109,14 +109,8 @@
     <!-- Preference which sets the device's display calibration. [CHAR LIMIT=50] -->
     <string name="device_calibration">Calibration</string>
 
-    <!-- A category title for the settings related to display. [CHAR LIMIT=50] -->
-    <string name="display_category_title">Display</string>
-    <!-- Title for preference which when clicked lets the user configure advanced display settings. [CHAR LIMIT=50] -->
-    <string name="advanced_display_settings_title">Advanced display settings</string>
-    <!-- Title for preference which when clicked lets the user configure advanced sound settings. [CHAR LIMIT=50] -->
-    <string name="advanced_sound_settings_title">Advanced sound settings</string>
-    <!-- Title for preference to allow game mode for display. [CHAR LIMIT=50] -->
-    <string name="game_mode_title">Allow game mode</string>
+    <!-- Title for preference for Resolution selection. [CHAR LIMIT=50] -->
+    <string name="resolution_selection_title">Resolution</string>
 
         <!-- Title of dialog asking user to confirm before clearing all caches. [CHAR LIMIT=48] -->
     <string name="device_storage_clear_cache_title">Clear cached data?</string>

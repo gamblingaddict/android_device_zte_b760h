@@ -225,6 +225,30 @@
         <item>FFFFFFFF</item>
     </string-array>
 
+    <!-- List entries for controlling display resolution setting [CHAR LIMIT=50] -->
+    <string-array name="display_resolution_entries">
+        <item>NTSC</item>
+        <item>PAL</item>
+        <item>720p 60Hz</item>
+        <item>720p 50Hz</item>
+        <item>1080i 60Hz</item>
+        <item>1080i 50Hz</item>
+        <item>1080p 60Hz</item>
+        <item>1080p 50Hz</item>
+    </string-array>
+
+    <!-- Entry values for display resolution preference -->
+    <string-array name="display_resolution_entry_values" translatable="false">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>11</item>
+        <item>12</item>
+    </string-array>
+
     <!-- List entries for controlling surround sound passthrough setting [CHAR LIMIT=50] -->
     <string-array name="surround_sound_entries">
         <item>Auto</item>

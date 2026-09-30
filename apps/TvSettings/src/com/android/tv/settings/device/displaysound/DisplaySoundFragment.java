@@ -20,6 +20,7 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.media.AudioManager;
 import android.os.Bundle;
+import android.os.SystemProperties;
 import android.provider.Settings;
 import android.support.v14.preference.SwitchPreference;
 import android.support.v17.preference.LeanbackPreferenceFragment;
@@ -33,6 +34,8 @@ import com.android.tv.settings.R;
 
 public class DisplaySoundFragment extends LeanbackPreferenceFragment implements
         Preference.OnPreferenceChangeListener {
+
+    private static final String KEY_DISPLAY_RESOLUTION = "display_resolution";
 
     private static final String KEY_SOUND_EFFECTS = "sound_effects";
     private static final String KEY_SURROUND_PASSTHROUGH = "surround_passthrough";
@@ -59,6 +62,11 @@ public class DisplaySoundFragment extends LeanbackPreferenceFragment implements
 
         final TwoStatePreference soundPref = (TwoStatePreference) findPreference(KEY_SOUND_EFFECTS);
         soundPref.setChecked(getSoundEffectsEnabled());
+
+        final ListPreference resolutionPref =
+                (ListPreference) findPreference(KEY_DISPLAY_RESOLUTION);
+        resolutionPref.setValue(SystemProperties.get("vendor.hdmi.boot_res"));
+        resolutionPref.setOnPreferenceChangeListener(this);
 
         final ListPreference surroundPref =
                 (ListPreference) findPreference(KEY_SURROUND_PASSTHROUGH);

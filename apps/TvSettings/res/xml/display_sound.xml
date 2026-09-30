@@ -20,7 +20,15 @@
 
     <PreferenceCategory
         android:key="display_category"
-        android:title="@string/display_category_title" />
+        android:title="@string/device_display" />
+
+    <ListPreference
+        android:key="display_resolution"
+        android:persistent="true"
+        android:entries="@array/display_resolution_entries"
+        android:entryValues="@array/display_resolution_entry_values"
+        android:title="@string/resolution_selection_title"
+        android:summary="%s" />
 
     <PreferenceCategory
         android:key="sound_category"
