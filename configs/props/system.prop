@@ -1,9 +1,6 @@
 # Graphics
 ro.opengles.version=131072
 debug.hwui.render_dirty_regions=false
-debug.hwui.use_partial_updates=false
-debug.sf.enable_gl_backpressure=1
-debug.renderengine.backend=threaded
 sys.use_fifo_ui=1
 ro.sf.lcd_density=320
 
@@ -11,6 +8,12 @@ ro.sf.lcd_density=320
 debug.stagefright.ccodec=0
 media.stagefright.legacyencoder=true
 media.stagefright.less-secure=true
+drm.service.enabled=true
+
+streamin.sf.vsyncimprove=1
+mtk.vdec.onlyone.field=0
+mtk.vdec.h264.playfast=1
+mtk.omxvdec.enablefast=1
 
 # WiFi
 wifi.interface=wlan0
@@ -19,15 +22,3 @@ wifi.direct.interface=p2p0
 
 # Root
 persist.sys.root_access=3
-
-# ZTE
-ro.product.screenzoom.unit=permillage
-persist.sys.miniavspdif=MiniAV
-mtk.vdec.onlyone.field=0
-zte.stb.net.coexistmode=3
-fast.feed=1
-ts.fastgetformat=1
-mtk.omxvdec.enablefast=1
-mtk.vdec.h264.playfast=1
-streamin.sf.vsyncimprove=1
-drm.service.enabled=true
