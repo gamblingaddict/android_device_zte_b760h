@@ -12,8 +12,8 @@ drm.service.enabled=true
 
 streamin.sf.vsyncimprove=1
 mtk.vdec.onlyone.field=0
-mtk.vdec.h264.playfast=1
-mtk.omxvdec.enablefast=1
+mtk.vdec.h264.playfast=0
+mtk.omxvdec.enablefast=0
 
 # WiFi
 wifi.interface=wlan0
