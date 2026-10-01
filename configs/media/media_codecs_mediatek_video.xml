@@ -22,9 +22,9 @@
             <Limit name="size" min="64x64" max="1920x1088" />
             <Feature name="adaptive-playback" />
         </MediaCodec>
-        <!--MediaCodec name="OMX.MTK.VIDEO.DECODER.HEVC" type="video/hevc" >
+        <MediaCodec name="OMX.MTK.VIDEO.DECODER.HEVC" type="video/hevc" >
             <Limit name="size" min="129x65" max="1920x1088" />
-        </MediaCodec-->
+        </MediaCodec>
         <!--MediaCodec name="OMX.MTK.VIDEO.DECODER.MPEG4" type="video/mp4v-es">
             <Limit name="size" min="16x16" max="1920x1088" />
         </MediaCodec>
