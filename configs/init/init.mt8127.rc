@@ -156,11 +156,6 @@ service hdmi_helper /vendor/bin/hdmi_helper.sh
     disabled
     oneshot
 
-service hdmi_daemon /vendor/bin/hdmi_daemon
-    class main
-    user root
-    group root
-
 #
 # Connectivity related services
 #
