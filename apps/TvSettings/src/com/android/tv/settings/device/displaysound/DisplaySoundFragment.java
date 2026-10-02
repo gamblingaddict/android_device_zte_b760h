@@ -16,10 +16,13 @@
 
 package com.android.tv.settings.device.displaysound;
 
+import android.app.AlertDialog;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.media.AudioManager;
 import android.os.Bundle;
+import android.os.PowerManager;
 import android.os.SystemProperties;
 import android.provider.Settings;
 import android.support.v14.preference.SwitchPreference;
@@ -29,13 +32,18 @@ import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceScreen;
 import android.support.v7.preference.TwoStatePreference;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.android.tv.settings.R;
+import com.android.tv.settings.widget.SettingsToast;
+
+import com.mediatek.hdmi.HDMINative;
 
 public class DisplaySoundFragment extends LeanbackPreferenceFragment implements
         Preference.OnPreferenceChangeListener {
 
     private static final String KEY_DISPLAY_RESOLUTION = "display_resolution";
+    private static final String PROP_HDMI_BOOT_RES = "vendor.hdmi.boot_res";
 
     private static final String KEY_SOUND_EFFECTS = "sound_effects";
     private static final String KEY_SURROUND_PASSTHROUGH = "surround_passthrough";
@@ -45,6 +53,7 @@ public class DisplaySoundFragment extends LeanbackPreferenceFragment implements
     private static final String VAL_SURROUND_SOUND_NEVER = "never";
 
     private AudioManager mAudioManager;
+    private HDMINative mHdmiNative;
 
     public static DisplaySoundFragment newInstance() {
         return new DisplaySoundFragment();
@@ -53,6 +62,7 @@ public class DisplaySoundFragment extends LeanbackPreferenceFragment implements
     @Override
     public void onCreate(Bundle savedInstanceState) {
         mAudioManager = (AudioManager) getActivity().getSystemService(Context.AUDIO_SERVICE);
+        mHdmiNative = new HDMINative();
         super.onCreate(savedInstanceState);
     }
 
@@ -65,7 +75,7 @@ public class DisplaySoundFragment extends LeanbackPreferenceFragment implements
 
         final ListPreference resolutionPref =
                 (ListPreference) findPreference(KEY_DISPLAY_RESOLUTION);
-        resolutionPref.setValue(SystemProperties.get("vendor.hdmi.boot_res"));
+        resolutionPref.setValue(Integer.toString(getCurrentResolution()));
         resolutionPref.setOnPreferenceChangeListener(this);
 
         final ListPreference surroundPref =
@@ -101,8 +111,46 @@ public class DisplaySoundFragment extends LeanbackPreferenceFragment implements
                     throw new IllegalArgumentException("Unknown surround sound pref value");
             }
             return true;
+        } else if (TextUtils.equals(preference.getKey(), KEY_DISPLAY_RESOLUTION)) {
+            int resValue = Integer.parseInt((String) newValue);
+            if (resValue != getCurrentResolution()) {
+                PowerManager pm =
+                        (PowerManager) getActivity().getSystemService(Context.POWER_SERVICE);
+                AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+                builder.setTitle(R.string.system_reboot_confirm)
+                        .setMessage(R.string.system_desc_reboot_confirm)
+                        .setCancelable(true)
+                        .setPositiveButton(R.string.restart_button_label, new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int id) {
+                                if (setHdmiResolution(resValue)) {
+                                    pm.reboot(null);
+                                } else {
+                                    SettingsToast.makeText(getContext(), R.string.accessory_state_canceled, SettingsToast.LENGTH_LONG).show();
+                                }
+                            }
+                        })
+                        .setNegativeButton(R.string.settings_cancel, null);
+
+                AlertDialog dialog = builder.create();
+                dialog.show();
+                // The resolution would only change after a reboot.
+                return false;
+            }
         }
         return true;
+    }
+
+    private static int getCurrentResolution() {
+        return SystemProperties.getInt(PROP_HDMI_BOOT_RES, -1);
+    }
+
+    private boolean setHdmiResolution(int value) {
+        try {
+            return mHdmiNative.setVideoConfig(value);
+        } catch (Exception e) {
+            Log.e(KEY_DISPLAY_RESOLUTION, "setVideoConfig(" + value + ") failed", e);
+            return false;
+        }
     }
 
     private boolean getSoundEffectsEnabled() {
