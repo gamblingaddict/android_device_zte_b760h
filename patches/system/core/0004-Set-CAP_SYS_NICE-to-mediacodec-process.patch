@@ -1,0 +1,27 @@
+From 6eb891fbf84107c2fe8ec8be8112bcd72f2857d9 Mon Sep 17 00:00:00 2001
+From: gamblingaddict <112048350+gamblingaddict@users.noreply.github.com>
+Date: Fri, 2 Oct 2026 19:42:21 +0700
+Subject: [PATCH] Set CAP_SYS_NICE to mediacodec process
+
+Change-Id: Ib8bd4d4fe60bccf2fe96c9738587aaa8c434bbeb
+---
+ libcutils/fs_config.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/libcutils/fs_config.c b/libcutils/fs_config.c
+index 68cfcbe..16ed464 100644
+--- a/libcutils/fs_config.c
++++ b/libcutils/fs_config.c
+@@ -145,6 +145,9 @@ static const struct fs_path_config android_files[] = {
+     /* Support FIFO scheduling mode in SurfaceFlinger. */
+     { 00755, AID_SYSTEM,    AID_GRAPHICS,     CAP_MASK_LONG(CAP_SYS_NICE), "system/bin/surfaceflinger" },
+ 
++    /* For real-time priority in video playback */
++    { 00755, AID_MEDIA_CODEC, AID_MEDIA_CODEC, CAP_MASK_LONG(CAP_SYS_NICE), "system/bin/mediacodec" },
++
+     { 00750, AID_ROOT,      AID_ROOT,      0, "system/bin/uncrypt" },
+     { 00750, AID_ROOT,      AID_ROOT,      0, "system/bin/install-recovery.sh" },
+     { 00755, AID_ROOT,      AID_SHELL,     0, "system/bin/*" },
+-- 
+2.43.0
+

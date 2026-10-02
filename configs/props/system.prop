@@ -10,10 +10,11 @@ media.stagefright.legacyencoder=true
 media.stagefright.less-secure=true
 drm.service.enabled=true
 
-streamin.sf.vsyncimprove=1
+streamin.sf.vsyncimprove=0
 mtk.vdec.onlyone.field=0
 mtk.vdec.h264.playfast=0
 mtk.omxvdec.enablefast=0
+mtk.omxvdec.disableppfw=1
 
 # WiFi
 wifi.interface=wlan0
@@ -22,3 +23,4 @@ wifi.direct.interface=p2p0
 
 # Root
 persist.sys.root_access=3
+ro.config.low_ram=true

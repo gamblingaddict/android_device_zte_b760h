@@ -1,0 +1,49 @@
+From 6623eb493b478893231a0ff1e1c3480832747fc1 Mon Sep 17 00:00:00 2001
+From: gamblingaddict <112048350+gamblingaddict@users.noreply.github.com>
+Date: Fri, 2 Oct 2026 19:46:18 +0700
+Subject: [PATCH 6/6] Output audio from HDMI and CVBS simultaneously
+
+Change-Id: Ie2d5b78fbbfe1c769dfcc1f1902f1649cb60ceb0
+---
+ services/audiopolicy/enginedefault/src/Engine.cpp          | 6 ++++++
+ services/audiopolicy/managerdefault/AudioPolicyManager.cpp | 7 +++++++
+ 2 files changed, 13 insertions(+)
+
+diff --git a/services/audiopolicy/enginedefault/src/Engine.cpp b/services/audiopolicy/enginedefault/src/Engine.cpp
+index 6db66b0..b6d1bb6 100755
+--- a/services/audiopolicy/enginedefault/src/Engine.cpp
++++ b/services/audiopolicy/enginedefault/src/Engine.cpp
+@@ -546,6 +546,12 @@ audio_devices_t Engine::getDeviceForStrategyInt(routing_strategy strategy,
+         // STRATEGY_ENFORCED_AUDIBLE, AUDIO_DEVICE_NONE otherwise
+         device |= device2;
+ 
++        if ((availableOutputDevicesType & AUDIO_DEVICE_OUT_AUX_DIGITAL) &&
++            (availableOutputDevicesType & AUDIO_DEVICE_OUT_SPEAKER) &&
++            (device & (AUDIO_DEVICE_OUT_SPEAKER | AUDIO_DEVICE_OUT_AUX_DIGITAL))) {
++            device |= (AUDIO_DEVICE_OUT_SPEAKER | AUDIO_DEVICE_OUT_AUX_DIGITAL);
++        }
++
+         // If hdmi system audio mode is on, remove speaker out of output list.
+         if ((strategy == STRATEGY_MEDIA) &&
+             (mForceUse[AUDIO_POLICY_FORCE_FOR_HDMI_SYSTEM_AUDIO] ==
+diff --git a/services/audiopolicy/managerdefault/AudioPolicyManager.cpp b/services/audiopolicy/managerdefault/AudioPolicyManager.cpp
+index dde445d..4fda083 100644
+--- a/services/audiopolicy/managerdefault/AudioPolicyManager.cpp
++++ b/services/audiopolicy/managerdefault/AudioPolicyManager.cpp
+@@ -3514,6 +3514,13 @@ AudioPolicyManager::AudioPolicyManager(AudioPolicyClientInterface *clientInterfa
+ 
+     updateDevicesAndOutputs();
+ 
++    // Report HDMI as connected so checkOutputsForDevice() builds the duplicating output
++    if (hasPrimaryOutput()) {
++        status_t st = setDeviceConnectionStateInt(AUDIO_DEVICE_OUT_AUX_DIGITAL,
++                AUDIO_POLICY_DEVICE_STATE_AVAILABLE, "", "");
++        ALOGI("boot HDMI connect returned %d", st);
++    }
++
+ #ifdef AUDIO_POLICY_TEST
+     if (mPrimaryOutput != 0) {
+         AudioParameter outputCmd = AudioParameter();
+-- 
+2.43.0
+

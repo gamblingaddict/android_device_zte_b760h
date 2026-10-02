@@ -81,7 +81,6 @@ PRODUCT_PACKAGES += \
 
 # HDMI
 PRODUCT_PACKAGES += \
-    hdmi_daemon \
     hdmi_helper
 
 # Shims/stubs
