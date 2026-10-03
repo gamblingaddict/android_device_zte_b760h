@@ -68,6 +68,7 @@ public class BluetoothPairingDialog extends DialogActivity {
     private BluetoothDevice mDevice;
     private int mType;
     private String mPairingKey;
+    private boolean mPairingInProgress = false;
 
     /**
      * Dismiss the dialog if the bond state changes to bonded or none, or if
@@ -197,7 +198,9 @@ public class BluetoothPairingDialog extends DialogActivity {
         unregisterReceiver(mReceiver);
 
         // Finish the activity if we get placed in the background and cancel pairing
-        cancelPairing();
+        if (!mPairingInProgress) {
+            cancelPairing();
+        }
         dismiss();
 
         super.onPause();
@@ -297,6 +300,7 @@ public class BluetoothPairingDialog extends DialogActivity {
                 try {
                     int passkey = Integer.parseInt(value);
                     mDevice.setPasskey(passkey);
+                    mPairingInProgress = true;
                 } catch (NumberFormatException e) {
                     Log.d(TAG, "pass key " + value + " is not an integer");
                 }
@@ -305,6 +309,7 @@ public class BluetoothPairingDialog extends DialogActivity {
             case BluetoothDevice.PAIRING_VARIANT_PASSKEY_CONFIRMATION:
             case BluetoothDevice.PAIRING_VARIANT_CONSENT:
                 mDevice.setPairingConfirmation(true);
+                mPairingInProgress = true;
                 break;
 
             case BluetoothDevice.PAIRING_VARIANT_DISPLAY_PASSKEY:
@@ -314,6 +319,7 @@ public class BluetoothPairingDialog extends DialogActivity {
 
             case BluetoothDevice.PAIRING_VARIANT_OOB_CONSENT:
                 mDevice.setRemoteOutOfBandData();
+                mPairingInProgress = true;
                 break;
 
             default:
