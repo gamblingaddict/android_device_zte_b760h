@@ -661,4 +661,6 @@
     <string name="reboot_safemode_action" msgid="8129550438717110406">"重新启动并进入安全模式"</string>
     <string name="reboot_safemode_confirm" msgid="3329475617645192086">"您想重新启动并进入安全模式吗？"</string>
     <string name="reboot_safemode_desc" msgid="5031024337104679492">"这将停用您已安装的所有第三方应用。您必须再次重新启动才能恢复这些应用。"</string>
+    <string name="device_display_sound" msgid="7399153506435649193">"显示和声音"</string>
+    <string name="resolution_selection_title" msgid="2873993320284587853">"分辨率"</string>
 </resources>

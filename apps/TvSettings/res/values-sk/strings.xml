@@ -671,4 +671,6 @@
     <string name="reboot_safemode_action" msgid="8129550438717110406">"Reštartovať do núdzového režimu"</string>
     <string name="reboot_safemode_confirm" msgid="3329475617645192086">"Chcete zariadenie reštartovať do núdzového režimu?"</string>
     <string name="reboot_safemode_desc" msgid="5031024337104679492">"Zakážu sa tým všetky aplikácie tretích strán, ktoré ste nainštalovali. Tieto aplikácie budú obnovené po ďalšom reštartovaní."</string>
+    <string name="device_display_sound" msgid="7399153506435649193">"Zobrazenie a zvuk"</string>
+    <string name="resolution_selection_title" msgid="2873993320284587853">"Rozlíšenie"</string>
 </resources>

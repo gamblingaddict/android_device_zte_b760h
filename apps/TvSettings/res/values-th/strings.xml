@@ -661,4 +661,6 @@
     <string name="reboot_safemode_action" msgid="8129550438717110406">"รีบูตเข้าสู่โหมดปลอดภัย"</string>
     <string name="reboot_safemode_confirm" msgid="3329475617645192086">"คุณต้องการรีบูตเข้าสู่โหมดปลอดภัยไหม"</string>
     <string name="reboot_safemode_desc" msgid="5031024337104679492">"วิธีนี้จะปิดใช้แอปพลิเคชันของบุคคลที่สามทั้งหมดที่คุณติดตั้งไว้ ระบบจะคืนค่าแอปดังกล่าวเมื่อคุณรีบูตอีกครั้ง"</string>
+    <string name="device_display_sound" msgid="7399153506435649193">"การแสดงผลและเสียง"</string>
+    <string name="resolution_selection_title" msgid="2873993320284587853">"ความละเอียด"</string>
 </resources>

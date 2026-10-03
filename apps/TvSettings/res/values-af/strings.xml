@@ -661,4 +661,6 @@
     <string name="reboot_safemode_action" msgid="8129550438717110406">"Herselflaai in veilig-modus"</string>
     <string name="reboot_safemode_confirm" msgid="3329475617645192086">"Wil jy herselflaai in veilig-modus?"</string>
     <string name="reboot_safemode_desc" msgid="5031024337104679492">"Dit sal alle derdepartyprogramme wat jy geïnstalleer het, deaktiveer. Hulle sal ingestel word wanneer jy weer herselflaai."</string>
+    <string name="device_display_sound" msgid="7399153506435649193">"Vertoning en klank"</string>
+    <string name="resolution_selection_title" msgid="2873993320284587853">"Resolusie"</string>
 </resources>

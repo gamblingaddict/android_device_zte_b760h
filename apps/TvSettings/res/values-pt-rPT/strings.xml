@@ -661,4 +661,6 @@
     <string name="reboot_safemode_action" msgid="8129550438717110406">"Reiniciar no modo de segurança"</string>
     <string name="reboot_safemode_confirm" msgid="3329475617645192086">"Pretende reiniciar no modo de segurança?"</string>
     <string name="reboot_safemode_desc" msgid="5031024337104679492">"Esta ação desativa todas as aplicações de terceiros instaladas. Estas são restauradas quando reiniciar novamente."</string>
+    <string name="device_display_sound" msgid="7399153506435649193">"Ecrã e som"</string>
+    <string name="resolution_selection_title" msgid="2873993320284587853">"Resolução"</string>
 </resources>

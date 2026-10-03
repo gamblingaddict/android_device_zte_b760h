@@ -661,4 +661,6 @@
     <string name="reboot_safemode_action" msgid="8129550438717110406">"Reiniciar en modo seguro"</string>
     <string name="reboot_safemode_confirm" msgid="3329475617645192086">"¿Quieres reiniciar en modo seguro?"</string>
     <string name="reboot_safemode_desc" msgid="5031024337104679492">"Se inhabilitarán todas las aplicaciones externas que hayas instalado. Estas se restaurarán la próxima vez que reinicies."</string>
+    <string name="device_display_sound" msgid="7399153506435649193">"Pantalla y sonido"</string>
+    <string name="resolution_selection_title" msgid="2873993320284587853">"Resolución"</string>
 </resources>

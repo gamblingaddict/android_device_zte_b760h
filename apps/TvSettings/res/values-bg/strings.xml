@@ -661,4 +661,6 @@
     <string name="reboot_safemode_action" msgid="8129550438717110406">"Рестартиране в безопасен режим"</string>
     <string name="reboot_safemode_confirm" msgid="3329475617645192086">"Искате ли да рестартирате в безопасен режим?"</string>
     <string name="reboot_safemode_desc" msgid="5031024337104679492">"Това действие ще деактивира всички приложения на трети страни, които сте инсталирали. Те ще бъдат възстановени, когато рестартирате отново."</string>
+    <string name="device_display_sound" msgid="7399153506435649193">"Дисплей и звук"</string>
+    <string name="resolution_selection_title" msgid="2873993320284587853">"Разделителна способност"</string>
 </resources>

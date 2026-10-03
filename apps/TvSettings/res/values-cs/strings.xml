@@ -671,4 +671,6 @@
     <string name="reboot_safemode_action" msgid="8129550438717110406">"Restartovat v nouzovém režimu"</string>
     <string name="reboot_safemode_confirm" msgid="3329475617645192086">"Chcete zařízení restartovat v nouzovém režimu?"</string>
     <string name="reboot_safemode_desc" msgid="5031024337104679492">"Deaktivujete tak veškeré nainstalované aplikace třetích stran. Po dalším restartu budou obnoveny."</string>
+    <string name="device_display_sound" msgid="7399153506435649193">"Obraz a zvuk"</string>
+    <string name="resolution_selection_title" msgid="2873993320284587853">"Rozlišení"</string>
 </resources>

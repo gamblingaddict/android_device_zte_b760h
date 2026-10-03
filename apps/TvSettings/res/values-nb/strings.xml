@@ -661,4 +661,6 @@
     <string name="reboot_safemode_action" msgid="8129550438717110406">"Start på nytt i sikker modus"</string>
     <string name="reboot_safemode_confirm" msgid="3329475617645192086">"Vil du starte på nytt i sikker modus?"</string>
     <string name="reboot_safemode_desc" msgid="5031024337104679492">"Dette slår av alle tredjepartsappene du har installert. De gjenopprettes når du starter på nytt."</string>
+    <string name="device_display_sound" msgid="7399153506435649193">"Skjerm og lyd"</string>
+    <string name="resolution_selection_title" msgid="2873993320284587853">"Oppløsning"</string>
 </resources>

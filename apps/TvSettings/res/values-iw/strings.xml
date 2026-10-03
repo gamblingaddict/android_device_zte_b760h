@@ -671,4 +671,6 @@
     <string name="reboot_safemode_action" msgid="8129550438717110406">"הפעל מחדש במצב בטוח"</string>
     <string name="reboot_safemode_confirm" msgid="3329475617645192086">"האם אתה רוצה להפעיל מחדש במצב בטוח?"</string>
     <string name="reboot_safemode_desc" msgid="5031024337104679492">"פעולה זו תשבית את כל האפליקציות של צד שלישי שהתקנת. הן ישוחזרו לאחר שתפעיל מחדש שוב."</string>
+    <string name="device_display_sound" msgid="7399153506435649193">"תצוגה וצליל"</string>
+    <string name="resolution_selection_title" msgid="2873993320284587853">"רזולוציה"</string>
 </resources>

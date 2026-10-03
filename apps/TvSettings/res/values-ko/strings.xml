@@ -661,4 +661,6 @@
     <string name="reboot_safemode_action" msgid="8129550438717110406">"안전 모드로 재부팅"</string>
     <string name="reboot_safemode_confirm" msgid="3329475617645192086">"안전 모드로 재부팅하시겠습니까?"</string>
     <string name="reboot_safemode_desc" msgid="5031024337104679492">"그러면 설치한 모든 제3자 애플리케이션을 사용할 수 없게 됩니다. 재부팅을 반복하면 애플리케이션이 복원됩니다."</string>
+    <string name="device_display_sound" msgid="7399153506435649193">"화면 및 소리"</string>
+    <string name="resolution_selection_title" msgid="2873993320284587853">"해상도"</string>
 </resources>

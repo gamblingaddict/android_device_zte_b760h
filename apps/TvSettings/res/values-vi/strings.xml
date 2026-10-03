@@ -661,4 +661,6 @@
     <string name="reboot_safemode_action" msgid="8129550438717110406">"Khởi động lại ở chế độ an toàn"</string>
     <string name="reboot_safemode_confirm" msgid="3329475617645192086">"Bạn có muốn khởi động lại ở chế độ an toàn không?"</string>
     <string name="reboot_safemode_desc" msgid="5031024337104679492">"Điều này sẽ vô hiệu hóa tất cả ứng dụng bên thứ ba bạn đã cài đặt. Chúng sẽ được khôi phục khi bạn khởi động lại lần nữa."</string>
+    <string name="device_display_sound" msgid="7399153506435649193">"Hiển thị và âm thanh"</string>
+    <string name="resolution_selection_title" msgid="2873993320284587853">"Độ phân giải"</string>
 </resources>

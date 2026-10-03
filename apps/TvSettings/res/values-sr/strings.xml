@@ -666,4 +666,6 @@
     <string name="reboot_safemode_action" msgid="8129550438717110406">"Рестартуј систем у безбедном режиму"</string>
     <string name="reboot_safemode_confirm" msgid="3329475617645192086">"Желите ли да рестартујете систем у безбедном режиму?"</string>
     <string name="reboot_safemode_desc" msgid="5031024337104679492">"Ово ће онемогућити све инсталиране апликације независних произвођача. Оне ће бити враћене када поново рестартујете систем."</string>
+    <string name="device_display_sound" msgid="7399153506435649193">"Приказ и звук"</string>
+    <string name="resolution_selection_title" msgid="2873993320284587853">"Резолуција"</string>
 </resources>

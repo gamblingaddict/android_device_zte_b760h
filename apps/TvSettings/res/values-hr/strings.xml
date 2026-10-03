@@ -666,4 +666,6 @@
     <string name="reboot_safemode_action" msgid="8129550438717110406">"Ponovo pokreni u sigurnom načinu rada"</string>
     <string name="reboot_safemode_confirm" msgid="3329475617645192086">"Želite li ponovo pokrenuti u sigurnom načinu rada?"</string>
     <string name="reboot_safemode_desc" msgid="5031024337104679492">"To će onemogućiti sve aplikacije trećih strana koje ste instalirali. Te će se aplikacije vratiti kada ponovo pokrenete uređaj."</string>
+    <string name="device_display_sound" msgid="7399153506435649193">"Zaslon i zvuk"</string>
+    <string name="resolution_selection_title" msgid="2873993320284587853">"Razlučivost"</string>
 </resources>

@@ -661,4 +661,6 @@
     <string name="reboot_safemode_action" msgid="8129550438717110406">"सुरक्षित मोड में पुन: बूट करें"</string>
     <string name="reboot_safemode_confirm" msgid="3329475617645192086">"क्या आप सुरक्षित मोड में पुन: बूट करना चाहते हैं?"</string>
     <string name="reboot_safemode_desc" msgid="5031024337104679492">"इससे आपके द्वारा इंस्टॉल किए गए सभी तृतीय पक्ष ऐप्लिकेशन अक्षम हो जाएंगे. जब आप पुन: बूट करेंगे तो उन्हें पुनर्स्थापित कर दिया जाएगा."</string>
+    <string name="device_display_sound" msgid="7399153506435649193">"डिसप्ले और आवाज़"</string>
+    <string name="resolution_selection_title" msgid="2873993320284587853">"रिज़ॉल्यूशन"</string>
 </resources>

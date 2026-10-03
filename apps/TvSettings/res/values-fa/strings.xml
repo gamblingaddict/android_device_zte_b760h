@@ -661,4 +661,6 @@
     <string name="reboot_safemode_action" msgid="8129550438717110406">"راه‌اندازی مجدد در حالت ایمن"</string>
     <string name="reboot_safemode_confirm" msgid="3329475617645192086">"می‌خواهید در حالت ایمن راه‌اندازی مجدد کنید؟‌"</string>
     <string name="reboot_safemode_desc" msgid="5031024337104679492">"با این کار همه برنامه‌های شخص ثالثی که نصب کرده‌اید غیرفعال می‌شود. با راه‌اندازی مجدد سیستم، این برنامه‌ها دوباره بازیابی می‌شوند."</string>
+    <string name="device_display_sound" msgid="7399153506435649193">"نمایشگر و صدا"</string>
+    <string name="resolution_selection_title" msgid="2873993320284587853">"وضوح"</string>
 </resources>

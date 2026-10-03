@@ -661,4 +661,6 @@
     <string name="reboot_safemode_action" msgid="8129550438717110406">"Reinicia en mode segur"</string>
     <string name="reboot_safemode_confirm" msgid="3329475617645192086">"Vols reiniciar en mode segur?"</string>
     <string name="reboot_safemode_desc" msgid="5031024337104679492">"Es desactivaran les aplicacions de tercers que hagis instal·lat. Tot aquest contingut es restablirà quan tornis a reiniciar el dispositiu."</string>
+    <string name="device_display_sound" msgid="7399153506435649193">"Pantalla i so"</string>
+    <string name="resolution_selection_title" msgid="2873993320284587853">"Resolució"</string>
 </resources>

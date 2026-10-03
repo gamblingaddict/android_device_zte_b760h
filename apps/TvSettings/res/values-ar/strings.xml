@@ -681,4 +681,6 @@
     <string name="reboot_safemode_action" msgid="8129550438717110406">"إعادة تشغيل في الوضع الآمن"</string>
     <string name="reboot_safemode_confirm" msgid="3329475617645192086">"هل تريد إعادة التشغيل في الوضع الآمن؟"</string>
     <string name="reboot_safemode_desc" msgid="5031024337104679492">"سيؤدي هذا إلى تعطيل كل تطبيقات الجهات الخارجية التي ثبَّتَها. وستتم استعادتها بعد إعادة التشغيل مرة أخرى."</string>
+    <string name="device_display_sound" msgid="7399153506435649193">"العرض والصوت"</string>
+    <string name="resolution_selection_title" msgid="2873993320284587853">"درجة الدقة"</string>
 </resources>

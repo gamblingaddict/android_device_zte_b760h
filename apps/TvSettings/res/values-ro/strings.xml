@@ -666,4 +666,6 @@
     <string name="reboot_safemode_action" msgid="8129550438717110406">"Reporniți în modul sigur"</string>
     <string name="reboot_safemode_confirm" msgid="3329475617645192086">"Doriți să reporniți în modul sigur?"</string>
     <string name="reboot_safemode_desc" msgid="5031024337104679492">"Astfel vor fi dezactivate toate aplicațiile terță parte pe care le-ați instalat. Acestea vor fi restabilite când reporniți din nou."</string>
+    <string name="device_display_sound" msgid="7399153506435649193">"Afișare și sunet"</string>
+    <string name="resolution_selection_title" msgid="2873993320284587853">"Rezoluție"</string>
 </resources>
