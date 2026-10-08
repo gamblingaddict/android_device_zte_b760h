@@ -37,11 +37,10 @@ BOARD_BOOTIMAGE_PARTITION_SIZE := 16777216
 BOARD_RECOVERYIMAGE_PARTITION_SIZE := 16777216
 BOARD_SYSTEMIMAGE_PARTITION_SIZE := 1073741824
 
-# Note: the data and cache partitions are swapped.
-# Better to have the larger partition be used for
-# user data than to let it stay mostly unused.
+# Note: the cache partition is on protect_s,
+# and the data partition is on cache.
+BOARD_CACHEIMAGE_PARTITION_SIZE := 10485760
 BOARD_USERDATAIMAGE_PARTITION_SIZE := 1073741824
-BOARD_CACHEIMAGE_PARTITION_SIZE := 789577728
 
 # Prebuilt kernel config
 TARGET_PREBUILT_KERNEL := $(DEVICE_PATH)/kernel
