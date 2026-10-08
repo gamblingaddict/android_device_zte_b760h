@@ -61,11 +61,11 @@
                              samplingRates="44100"
                              channelMasks="AUDIO_CHANNEL_OUT_STEREO"/>
                 </mixPort>
-                <!-- Note: untested.
                 <mixPort name="spdif_pcm" role="source">
                     <profile name="" format="AUDIO_FORMAT_PCM_16_BIT"
                              samplingRates="44100" channelMasks="AUDIO_CHANNEL_OUT_STEREO"/>
                 </mixPort>
+                <!-- Note: untested.
                 <mixPort name="hdmi_raw" role="source"
                          flags="AUDIO_OUTPUT_FLAG_DIRECT">
                     <profile name="" samplingRates="44100"
@@ -106,11 +106,11 @@
                              samplingRates="44100"
                              channelMasks="AUDIO_CHANNEL_OUT_STEREO"/>
                 </devicePort>
-                <!-- Note: untested. >
-                <devicePort tagName="SPDIF" type="AUDIO_DEVICE_OUT_SPDIF" role="sink">
+                <!-- The MTK HAL uses 0x20000 for SPDIF, which is AUDIO_DEVICE_OUT_LINE in Android 7 -->
+                <devicePort tagName="SPDIF" type="AUDIO_DEVICE_OUT_LINE" role="sink">
                     <profile name="" format="AUDIO_FORMAT_PCM_16_BIT"
                              samplingRates="44100" channelMasks="AUDIO_CHANNEL_OUT_STEREO"/>
-                </devicePort-->
+                </devicePort>
 
                 <devicePort tagName="BT SCO Headset Mic" type="AUDIO_DEVICE_IN_BLUETOOTH_SCO_HEADSET" role="source">
                     <profile name="" format="AUDIO_FORMAT_PCM_16_BIT"
@@ -129,9 +129,9 @@
                        sources="primary output"/>
                 <route type="mix" sink="HDMI Out"
                        sources="hdmi_pcm"/>
-                 <!-- Note: untested.
+                 <!-- Note: untested. -->
                  <route type="mix" sink="SPDIF"
-                       sources="spdif_pcm"/-->
+                       sources="spdif_pcm"/>
                 <route type="mix" sink="primary input"
                        sources="BT SCO Headset Mic"/>
             </routes>
