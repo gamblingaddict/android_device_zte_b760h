@@ -132,6 +132,9 @@ on property:sys.boot_completed=1
     write /proc/sys/vm/swappiness 80
     swapon_all /fstab.mt8127
 
+    # Set clock to known good time
+    start restoretime
+
 on early_property:ro.hardware=mt8127
     setprop ro.mtk.hardware mt8127
 
@@ -157,6 +160,15 @@ service hdmi_helper /vendor/bin/hdmi_helper.sh
     group root
     disabled
     oneshot
+
+service restoretime /vendor/bin/restoretime.sh
+    user root
+    disabled
+    oneshot
+
+service savetime /vendor/bin/savetime.sh
+    class late_start
+    user root
 
 service drvbd /vendor/bin/drvbd
     class main

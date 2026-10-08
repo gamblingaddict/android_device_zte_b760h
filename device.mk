@@ -111,6 +111,11 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     TvSettingsMTK
 
+# Time
+PRODUCT_PACKAGES += \
+    savetime \
+    restoretime
+
 # Extras
 PRODUCT_PACKAGES += \
     DocumentsUI \
