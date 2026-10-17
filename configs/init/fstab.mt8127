@@ -11,6 +11,7 @@
 /dev/bootimg            /boot		emmc	defaults    recoveryonly
 /dev/recovery           /recovery	emmc	defaults    recoveryonly
 /dev/nvram              /nvram		emmc	defaults    recoveryonly
+/dev/misc               /misc		emmc	defaults    recoveryonly
 
 # ZRAM
 /dev/block/zram0	    none		swap	defaults    zramsize=536870912
