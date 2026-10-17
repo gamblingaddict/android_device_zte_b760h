@@ -17,9 +17,13 @@
 package com.android.tv.settings.device.displaysound;
 
 import android.app.AlertDialog;
+import android.content.ActivityNotFoundException;
+import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.os.Bundle;
 import android.os.PowerManager;
@@ -44,6 +48,12 @@ public class DisplaySoundFragment extends LeanbackPreferenceFragment implements
 
     private static final String KEY_DISPLAY_RESOLUTION = "display_resolution";
     private static final String PROP_HDMI_BOOT_RES = "vendor.hdmi.boot_res";
+
+    private static final String KEY_DISPLAY_OVERSCAN = "display_overscan";
+
+    private static final String OVERSCAN_APP_PACKAGE = "com.google.android.tungsten.overscan";
+    private static final ComponentName OVERSCAN_ACTIVITY = new ComponentName(
+            OVERSCAN_APP_PACKAGE, OVERSCAN_APP_PACKAGE + ".CalibratorActivity");
 
     private static final String KEY_SOUND_EFFECTS = "sound_effects";
     private static final String KEY_SURROUND_PASSTHROUGH = "surround_passthrough";
@@ -82,6 +92,11 @@ public class DisplaySoundFragment extends LeanbackPreferenceFragment implements
                 (ListPreference) findPreference(KEY_SURROUND_PASSTHROUGH);
         surroundPref.setValue(getSurroundPassthroughSetting());
         surroundPref.setOnPreferenceChangeListener(this);
+
+        final Preference overscanPref = findPreference(KEY_DISPLAY_OVERSCAN);
+        if (overscanPref != null && !isPackageInstalled(OVERSCAN_APP_PACKAGE)) {
+            overscanPref.setVisible(false);
+        }
     }
 
     @Override
@@ -89,6 +104,9 @@ public class DisplaySoundFragment extends LeanbackPreferenceFragment implements
         if (TextUtils.equals(preference.getKey(), KEY_SOUND_EFFECTS)) {
             final TwoStatePreference soundPref = (TwoStatePreference) preference;
             setSoundEffectsEnabled(soundPref.isChecked());
+        } else if (TextUtils.equals(preference.getKey(), KEY_DISPLAY_OVERSCAN)) {
+            launchOverscan();
+            return true;
         }
         return super.onPreferenceTreeClick(preference);
     }
@@ -138,6 +156,26 @@ public class DisplaySoundFragment extends LeanbackPreferenceFragment implements
             }
         }
         return true;
+    }
+
+    private void launchOverscan() {
+        Intent intent = new Intent();
+        intent.setComponent(OVERSCAN_ACTIVITY);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        try {
+            startActivity(intent);
+        } catch (ActivityNotFoundException e) {
+            Log.e(KEY_DISPLAY_OVERSCAN, "Overscan activity not found", e);
+        }
+    }
+
+    private boolean isPackageInstalled(String packageName) {
+        try {
+            getContext().getPackageManager().getPackageInfo(packageName, 0);
+            return true;
+        } catch (PackageManager.NameNotFoundException e) {
+            return false;
+        }
     }
 
     private static int getCurrentResolution() {

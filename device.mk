@@ -122,7 +122,8 @@ PRODUCT_PACKAGES += \
     DocumentsUI \
     WebViewGoogle \
     SetupWraith \
-    B760HSetupCustomizer
+    B760HSetupCustomizer \
+    Overscan
 
 # Remove packages
 PRODUCT_PACKAGES += RemovePackages

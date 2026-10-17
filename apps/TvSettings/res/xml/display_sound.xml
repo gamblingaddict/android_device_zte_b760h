@@ -30,6 +30,10 @@
         android:title="@string/resolution_selection_title"
         android:summary="%s" />
 
+    <Preference
+        android:key="display_overscan"
+        android:title="@string/device_calibration" />
+
     <PreferenceCategory
         android:key="sound_category"
         android:title="@string/device_sound" />
