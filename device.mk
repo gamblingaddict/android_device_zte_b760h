@@ -87,7 +87,8 @@ PRODUCT_PACKAGES += \
 
 # Remote
 PRODUCT_PACKAGES += \
-    ir_daemon
+    ir_daemon \
+    ir_daemon_recovery
 
 # HDMI
 PRODUCT_PACKAGES += \

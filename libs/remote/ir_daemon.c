@@ -38,6 +38,13 @@
 #define UINPUT_DEVICE     "/dev/uinput"
 #define DEVICE_NAME       "nec_remote_virtual"
 
+#ifdef BUILD_RECOVERY
+#undef KEY_SELECT
+#define KEY_SELECT KEY_ENTER
+#undef KEY_BACK
+#define KEY_BACK KEY_BACKSPACE
+#endif
+
 /* How long to wait, in milliseconds, after the last record for a given
  * scancode before deciding the button has been released. */
 #define RELEASE_TIMEOUT_MS   150
