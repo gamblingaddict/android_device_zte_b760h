@@ -1,0 +1,102 @@
+From bc721c2da5cf2b8c8ae9a81919f3069d18ea6399 Mon Sep 17 00:00:00 2001
+From: gamblingaddict <112048350+gamblingaddict@users.noreply.github.com>
+Date: Sun, 18 Oct 2026 08:04:49 +0700
+Subject: [PATCH] Add forced overscan property
+
+Change-Id: I3be622791080d76ff1822b3e3faae8532e8f8276
+---
+ .../server/policy/PhoneWindowManager.java     | 33 +++++++++++++++++--
+ 1 file changed, 31 insertions(+), 2 deletions(-)
+
+diff --git a/services/core/java/com/android/server/policy/PhoneWindowManager.java b/services/core/java/com/android/server/policy/PhoneWindowManager.java
+index 6a22c505..9648bcb0 100644
+--- a/services/core/java/com/android/server/policy/PhoneWindowManager.java
++++ b/services/core/java/com/android/server/policy/PhoneWindowManager.java
+@@ -199,6 +199,14 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+     static final boolean DEBUG_WAKEUP = false;
+     static final boolean SHOW_STARTING_ANIMATIONS = true;
+ 
++    // Make windows that ask for FLAG_LAYOUT_IN_OVERSCAN follow the display overscan
++    // insets like any other window. Compile-time default, overridden by the
++    // persist.sys.overscan.force property.
++    static final boolean DEFAULT_OVERSCAN_FORCE_INSET = false;
++
++    // The overscan calibration app must always be laid out into the full overscan area.
++    static final String OVERSCAN_CALIBRATION_PACKAGE = "com.google.android.tungsten.overscan";
++
+     // Whether to allow dock apps with METADATA_DOCK_HOME to temporarily take over the Home key.
+     // No longer recommended for desk docks;
+     static final boolean ENABLE_DESK_DOCK_HOME_CAPTURE = false;
+@@ -794,6 +802,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+     int mOverscanRight = 0;
+     int mOverscanBottom = 0;
+ 
++    // Strip FLAG_LAYOUT_IN_OVERSCAN from windows so they follow the overscan insets.
++    volatile boolean mOverscanForceInset = DEFAULT_OVERSCAN_FORCE_INSET;
++
+     // What we do when the user double-taps on home
+     private int mDoubleTapOnHomeBehavior;
+ 
+@@ -2040,6 +2051,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+         mPowerKeyWakeLock = mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
+                 "PhoneWindowManager.mPowerKeyWakeLock");
+         mEnableShiftMenuBugReports = "1".equals(SystemProperties.get("ro.debuggable"));
++        updateOverscanForceInset();
+         mSupportAutoRotation = mContext.getResources().getBoolean(
+                 com.android.internal.R.bool.config_supportAutoRotation);
+         mLidOpenRotation = readRotation(
+@@ -2475,9 +2487,23 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+             mOverscanTop = top;
+             mOverscanRight = right;
+             mOverscanBottom = bottom;
++            updateOverscanForceInset();
+         }
+     }
+ 
++    private void updateOverscanForceInset() {
++        mOverscanForceInset = SystemProperties.getBoolean(
++                "persist.sys.overscan.force", DEFAULT_OVERSCAN_FORCE_INSET);
++    }
++
++    private int applyOverscanForceInset(int fl, WindowManager.LayoutParams attrs) {
++        if (mOverscanForceInset
++                && !OVERSCAN_CALIBRATION_PACKAGE.equals(attrs.packageName)) {
++            fl &= ~FLAG_LAYOUT_IN_OVERSCAN;
++        }
++        return fl;
++    }
++
+     public void updateSettings() {
+         ContentResolver resolver = mContext.getContentResolver();
+         boolean updateRotation = false;
+@@ -4659,7 +4685,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+     public boolean getInsetHintLw(WindowManager.LayoutParams attrs, Rect taskBounds,
+             int displayRotation, int displayWidth, int displayHeight, Rect outContentInsets,
+             Rect outStableInsets, Rect outOutsets) {
+-        final int fl = WindowManagerPolicyControl.getWindowFlags(null, attrs);
++        final int fl = applyOverscanForceInset(
++                WindowManagerPolicyControl.getWindowFlags(null, attrs), attrs);
+         final int sysuiVis = WindowManagerPolicyControl.getSystemUiVisibility(null, attrs);
+         final int systemUiVisibility = (sysuiVis | attrs.subtreeSystemUiVisibility);
+ 
+@@ -5227,7 +5254,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+             offsetInputMethodWindowLw(mLastInputMethodWindow);
+         }
+ 
+-        final int fl = WindowManagerPolicyControl.getWindowFlags(win, attrs);
++        final int fl = applyOverscanForceInset(
++                WindowManagerPolicyControl.getWindowFlags(win, attrs), attrs);
+         final int pfl = WindowManagerPolicyControl.getPrivateWindowFlags(win, attrs);
+         final int sim = attrs.softInputMode;
+         final int sysUiFl = WindowManagerPolicyControl.getSystemUiVisibility(win, null);
+@@ -9068,6 +9096,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+                 pw.print(","); pw.print(mOverscanScreenTop);
+                 pw.print(") "); pw.print(mOverscanScreenWidth);
+                 pw.print("x"); pw.println(mOverscanScreenHeight);
++        pw.print(prefix); pw.print("mOverscanForceInset="); pw.println(mOverscanForceInset);
+         if (mOverscanLeft != 0 || mOverscanTop != 0
+                 || mOverscanRight != 0 || mOverscanBottom != 0) {
+             pw.print(prefix); pw.print("mOverscan left="); pw.print(mOverscanLeft);
+-- 
+2.43.0
+
