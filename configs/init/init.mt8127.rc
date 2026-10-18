@@ -8,11 +8,9 @@ on early-init
     # https://kujadi-tahu.blogspot.com/2019/07/mengobrak-abrik-stb-jadul-zte-b700v5.html?showComment=1593949249247&m=1#c2449595630486194062
     write /proc/net/monitor 0
 
-on init
-    setprop ro.vold.primary_physical 1
-
 on fs
     mount_all /fstab.mt8127
+    exec /system/bin/sh /storage_setprop.sh
 
     setprop ro.config.size_override 1920,1080
 
