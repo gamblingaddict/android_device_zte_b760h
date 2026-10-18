@@ -1,15 +1,15 @@
-From bc721c2da5cf2b8c8ae9a81919f3069d18ea6399 Mon Sep 17 00:00:00 2001
+From e317f32221b1140da7de019b2161eefa977a3390 Mon Sep 17 00:00:00 2001
 From: gamblingaddict <112048350+gamblingaddict@users.noreply.github.com>
 Date: Sun, 18 Oct 2026 08:04:49 +0700
 Subject: [PATCH] Add forced overscan property
 
 Change-Id: I3be622791080d76ff1822b3e3faae8532e8f8276
 ---
- .../server/policy/PhoneWindowManager.java     | 33 +++++++++++++++++--
- 1 file changed, 31 insertions(+), 2 deletions(-)
+ .../server/policy/PhoneWindowManager.java     | 70 ++++++++++++++++---
+ 1 file changed, 62 insertions(+), 8 deletions(-)
 
 diff --git a/services/core/java/com/android/server/policy/PhoneWindowManager.java b/services/core/java/com/android/server/policy/PhoneWindowManager.java
-index 6a22c505..9648bcb0 100644
+index 6a22c505..5398f4ca 100644
 --- a/services/core/java/com/android/server/policy/PhoneWindowManager.java
 +++ b/services/core/java/com/android/server/policy/PhoneWindowManager.java
 @@ -199,6 +199,14 @@ public class PhoneWindowManager implements WindowManagerPolicy {
@@ -45,7 +45,7 @@ index 6a22c505..9648bcb0 100644
          mSupportAutoRotation = mContext.getResources().getBoolean(
                  com.android.internal.R.bool.config_supportAutoRotation);
          mLidOpenRotation = readRotation(
-@@ -2475,9 +2487,23 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+@@ -2475,9 +2487,32 @@ public class PhoneWindowManager implements WindowManagerPolicy {
              mOverscanTop = top;
              mOverscanRight = right;
              mOverscanBottom = bottom;
@@ -58,9 +58,18 @@ index 6a22c505..9648bcb0 100644
 +                "persist.sys.overscan.force", DEFAULT_OVERSCAN_FORCE_INSET);
 +    }
 +
++    private boolean hasOverscan() {
++        return mOverscanLeft != 0 || mOverscanTop != 0
++                || mOverscanRight != 0 || mOverscanBottom != 0;
++    }
++
++    private boolean isOverscanForced(WindowManager.LayoutParams attrs) {
++        return mOverscanForceInset && hasOverscan()
++                && !OVERSCAN_CALIBRATION_PACKAGE.equals(attrs.packageName);
++    }
++
 +    private int applyOverscanForceInset(int fl, WindowManager.LayoutParams attrs) {
-+        if (mOverscanForceInset
-+                && !OVERSCAN_CALIBRATION_PACKAGE.equals(attrs.packageName)) {
++        if (isOverscanForced(attrs)) {
 +            fl &= ~FLAG_LAYOUT_IN_OVERSCAN;
 +        }
 +        return fl;
@@ -69,7 +78,7 @@ index 6a22c505..9648bcb0 100644
      public void updateSettings() {
          ContentResolver resolver = mContext.getContentResolver();
          boolean updateRotation = false;
-@@ -4659,7 +4685,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+@@ -4659,7 +4694,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
      public boolean getInsetHintLw(WindowManager.LayoutParams attrs, Rect taskBounds,
              int displayRotation, int displayWidth, int displayHeight, Rect outContentInsets,
              Rect outStableInsets, Rect outOutsets) {
@@ -79,17 +88,59 @@ index 6a22c505..9648bcb0 100644
          final int sysuiVis = WindowManagerPolicyControl.getSystemUiVisibility(null, attrs);
          final int systemUiVisibility = (sysuiVis | attrs.subtreeSystemUiVisibility);
  
-@@ -5227,7 +5254,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+@@ -5227,7 +5263,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
              offsetInputMethodWindowLw(mLastInputMethodWindow);
          }
  
 -        final int fl = WindowManagerPolicyControl.getWindowFlags(win, attrs);
 +        final int fl = applyOverscanForceInset(
 +                WindowManagerPolicyControl.getWindowFlags(win, attrs), attrs);
++        final boolean overscanForced = isOverscanForced(attrs);
          final int pfl = WindowManagerPolicyControl.getPrivateWindowFlags(win, attrs);
          final int sim = attrs.softInputMode;
          final int sysUiFl = WindowManagerPolicyControl.getSystemUiVisibility(win, null);
-@@ -9068,6 +9096,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+@@ -5313,6 +5351,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+             }
+         } else if (attrs.type == TYPE_WALLPAPER) {
+            layoutWallpaper(win, pf, df, of, cf);
++           if (mOverscanForceInset && hasOverscan()) {
++               vf.set(cf);
++               sf.set(cf);
++           }
+         } else if (win == mStatusBar) {
+             pf.left = df.left = of.left = mUnrestrictedScreenLeft;
+             pf.top = df.top = of.top = mUnrestrictedScreenTop;
+@@ -5428,12 +5470,23 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+                         of.right = mUnrestrictedScreenLeft + mUnrestrictedScreenWidth;
+                         of.bottom = mUnrestrictedScreenTop + mUnrestrictedScreenHeight;
+                     } else {
+-                        pf.left = df.left = mRestrictedOverscanScreenLeft;
+-                        pf.top = df.top = mRestrictedOverscanScreenTop;
+-                        pf.right = df.right = mRestrictedOverscanScreenLeft
+-                                + mRestrictedOverscanScreenWidth;
+-                        pf.bottom = df.bottom = mRestrictedOverscanScreenTop
+-                                + mRestrictedOverscanScreenHeight;
++                        if (overscanForced) {
++                            // Bound the window itself to the calibrated area instead of
++                            // only reporting insets, so apps that ignore insets still fit.
++                            pf.left = df.left = mRestrictedScreenLeft;
++                            pf.top = df.top = mRestrictedScreenTop;
++                            pf.right = df.right = mRestrictedScreenLeft
++                                    + mRestrictedScreenWidth;
++                            pf.bottom = df.bottom = mRestrictedScreenTop
++                                    + mRestrictedScreenHeight;
++                        } else {
++                            pf.left = df.left = mRestrictedOverscanScreenLeft;
++                            pf.top = df.top = mRestrictedOverscanScreenTop;
++                            pf.right = df.right = mRestrictedOverscanScreenLeft
++                                    + mRestrictedOverscanScreenWidth;
++                            pf.bottom = df.bottom = mRestrictedOverscanScreenTop
++                                    + mRestrictedOverscanScreenHeight;
++                        }
+                         // We need to tell the app about where the frame inside the overscan
+                         // is, so it can inset its content by that amount -- it didn't ask
+                         // to actually extend itself into the overscan region.
+@@ -9068,6 +9121,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                  pw.print(","); pw.print(mOverscanScreenTop);
                  pw.print(") "); pw.print(mOverscanScreenWidth);
                  pw.print("x"); pw.println(mOverscanScreenHeight);
