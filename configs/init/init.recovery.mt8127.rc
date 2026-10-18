@@ -1,0 +1,6 @@
+on early-init
+    # Stops the device from rebooting after a bit.
+    # https://kujadi-tahu.blogspot.com/2019/07/mengobrak-abrik-stb-jadul-zte-b700v5.html?showComment=1593949249247&m=1#c2449595630486194062
+    write /proc/net/monitor 0
+
+service ir_daemon /sbin/ir_daemon_recovery
