@@ -62,7 +62,7 @@ BOARD_MKBOOTIMG_ARGS := \
     --tags_offset 0x00000100
 
 # Recovery
-TARGET_RECOVERY_FSTAB	:= $(DEVICE_PATH)/configs/init/fstab.mt8127
+TARGET_RECOVERY_FSTAB	:= $(DEVICE_PATH)/configs/init/fstab.mt8127.std
 
 # Props
 TARGET_SYSTEM_PROP	:= $(DEVICE_PATH)/configs/props/system.prop
