@@ -1,0 +1,40 @@
+From eab0a931f2b5c824e38f81706d7999b4eac200fa Mon Sep 17 00:00:00 2001
+From: gamblingaddict <112048350+gamblingaddict@users.noreply.github.com>
+Date: Sat, 17 Oct 2026 20:39:59 +0700
+Subject: [PATCH] Fix black screen on factory reset
+
+Change-Id: I1947380d9282aff341bf0921d212f826b7ba277a
+---
+ screen_ui.cpp | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/screen_ui.cpp b/screen_ui.cpp
+index 7d115c6..5b2ac5e 100644
+--- a/screen_ui.cpp
++++ b/screen_ui.cpp
+@@ -356,7 +356,11 @@ void ScreenRecoveryUI::update_screen_locked() {
+ // Updates only the progress bar, if possible, otherwise redraws the screen.
+ // Should only be called with updateMutex locked.
+ void ScreenRecoveryUI::update_progress_locked() {
+-    draw_foreground_locked();
++    if (show_text) {
++        draw_screen_locked();       // keep the log on screen
++    } else {
++        draw_foreground_locked();
++    }
+     gr_flip();
+ }
+ 
+@@ -383,7 +387,8 @@ void ScreenRecoveryUI::ProgressThreadLoop() {
+ 
+         // update the installation animation, if active
+         // skip this if we have a text overlay (too expensive to update)
+-        if ((currentIcon == INSTALLING_UPDATE || currentIcon == ERASING)) {
++        // ProgressThreadLoop(): don't animate over the text log
++        if ((currentIcon == INSTALLING_UPDATE || currentIcon == ERASING) && !show_text) {
+             if (!intro_done) {
+                 if (current_frame == intro_frames - 1) {
+                     intro_done = true;
+-- 
+2.43.0
+
