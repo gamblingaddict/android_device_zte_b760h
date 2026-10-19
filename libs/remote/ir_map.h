@@ -6,6 +6,13 @@ struct scancode_map {
     const char *name; /* for logging only */
 };
 
+// Recovery bits:
+#ifdef BUILD_RECOVERY
+#undef KEY_SELECT
+#define KEY_SELECT KEY_ENTER
+#undef KEY_BACK
+#define KEY_BACK KEY_BACKSPACE
+#endif
 
 /* Probably complete, but the keycode selection is a bit questionable.
  * Best to check the stock firmware later on. */

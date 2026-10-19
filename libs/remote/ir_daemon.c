@@ -56,13 +56,6 @@
 #define UINPUT_DEVICE     "/dev/uinput"
 #define DEVICE_NAME       "nec_remote_virtual"
 
-#ifdef BUILD_RECOVERY
-#undef KEY_SELECT
-#define KEY_SELECT KEY_ENTER
-#undef KEY_BACK
-#define KEY_BACK KEY_BACKSPACE
-#endif
-
 /* How long to wait, in milliseconds, after the last record for a given
  * scancode before deciding the button has been released. */
 #define RELEASE_TIMEOUT_MS   150
@@ -72,9 +65,9 @@
  * MOUSE_STEP_MIN and grows by 1 every MOUSE_ACCEL_MS of holding, up to
  * MOUSE_STEP_MAX. */
 #define MOUSE_TICK_MS        16
-#define MOUSE_ACCEL_MS       100
+#define MOUSE_ACCEL_MS       150
 #define MOUSE_STEP_MIN       1
-#define MOUSE_STEP_MAX       24
+#define MOUSE_STEP_MAX       20
 
 /* ---- wire format ---------------------------------------------------- */
 
@@ -142,10 +135,17 @@ static int uinput_open_and_register(void) {
     }
 
     if (g_mouse_emu) {
+        if (ioctl(fd, UI_SET_KEYBIT, BTN_RIGHT) < 0) goto ioctl_fail;
         if (ioctl(fd, UI_SET_KEYBIT, BTN_LEFT) < 0) goto ioctl_fail;
         if (ioctl(fd, UI_SET_EVBIT, EV_REL) < 0) goto ioctl_fail;
         if (ioctl(fd, UI_SET_RELBIT, REL_X) < 0) goto ioctl_fail;
         if (ioctl(fd, UI_SET_RELBIT, REL_Y) < 0) goto ioctl_fail;
+        /* Real USB mice send MSC_SCAN before every button event. TWRP's
+         * vk_modify() relies on a non-SYN event arriving between two
+         * SYN_REPORTs; without it the SYN after a click is turned into a
+         * bogus touch release. See uinput_click(). */
+        if (ioctl(fd, UI_SET_EVBIT, EV_MSC) < 0) goto ioctl_fail;
+        if (ioctl(fd, UI_SET_MSCBIT, MSC_SCAN) < 0) goto ioctl_fail;
     }
 
     /* Kernel 3.4 predates UI_DEV_SETUP/UI_DEV_CREATE-from-ioctl (added
@@ -201,6 +201,13 @@ static void uinput_rel(int fd, int dx, int dy) {
     uinput_emit(fd, EV_SYN, SYN_REPORT, 0);
 }
 
+/* Mouse button 1 press/release, framed like a real HID mouse does it:
+ * MSC_SCAN, then the button, then SYN_REPORT. */
+static void uinput_click(int fd, int down) {
+    uinput_emit(fd, EV_MSC, MSC_SCAN, 0x90001);
+    uinput_key(fd, BTN_LEFT, down);
+}
+
 /* ---- held-key state ---------------------------------------------------- */
 
 struct hold_state {
@@ -221,7 +228,7 @@ static void mouse_move(int fd, const struct hold_state *h, int64_t now) {
 static void hold_release(int fd, struct hold_state *h) {
     if (h->keycode < 0) return;
     if (g_mouse_emu && h->keycode == KEY_SELECT) {
-        uinput_key(fd, BTN_LEFT, 0);
+        uinput_click(fd, 0);
     } else if (!h->is_dir) {
         uinput_key(fd, h->keycode, 0);
     }
@@ -247,7 +254,7 @@ static void hold_press(int fd, struct hold_state *h, int keycode, int64_t now) {
             return;
         }
         if (keycode == KEY_SELECT) {
-            uinput_key(fd, BTN_LEFT, 1);
+            uinput_click(fd, 1);
             return;
         }
     }
@@ -303,16 +310,18 @@ int main(int argc, char **argv) {
     pfd.events = POLLIN;
 
     for (;;) {
-        /* Work out how long we can sleep: until the release deadline,
-         * or (while moving the pointer) until the next movement tick. */
+        /* Work out how long we can sleep: until the release deadline or
+         * (while moving the pointer) the next movement tick, whichever
+         * comes first. */
         int64_t now = now_ms();
-        int timeout = -1;
+        int64_t deadline = -1;
         if (hold.keycode >= 0) {
-            int64_t deadline = hold.last_rec_ms + RELEASE_TIMEOUT_MS;
+            deadline = hold.last_rec_ms + RELEASE_TIMEOUT_MS;
             if (hold.is_dir && hold.next_tick_ms < deadline)
                 deadline = hold.next_tick_ms;
-            timeout = deadline > now ? (int)(deadline - now) : 0;
         }
+        int timeout = deadline < 0 ? -1
+                    : deadline > now ? (int)(deadline - now) : 0;
 
         int ret = poll(&pfd, 1, timeout);
 

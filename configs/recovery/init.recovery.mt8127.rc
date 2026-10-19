@@ -6,7 +6,7 @@ on early-init
     wait /dev/block/mmcblk0p6
     exec /sbin/busybox sh /storage_init.sh recovery
 
-service ir_daemon /sbin/ir_daemon_recovery
+service ir_daemon /sbin/ir_daemon_recovery --mouse-emu
 
 service console /sbin/busybox sh
     console
