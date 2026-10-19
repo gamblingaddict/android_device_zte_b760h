@@ -1,0 +1,1473 @@
+From 48916b05e9f77962e131eb8d198cf000123eba7f Mon Sep 17 00:00:00 2001
+From: gamblingaddict <112048350+gamblingaddict@users.noreply.github.com>
+Date: Mon, 19 Oct 2026 08:44:52 +0700
+Subject: [PATCH] Add colour converter in GLConsumer
+
+This fixes hardware video decoding on apps that use a TextureView
+for video playback.
+Mostly based on this patch, and revised by Claude and ChatGPT.
+https://github.com/noobas1937/android_frameworks_native/blob/master/0001-frameworks_native-add-mtk-stuffs.patch
+
+Change-Id: I2317100d66c8be4a242767bed45bb526825a95c7
+---
+ include/gui/GLConsumer.h               |  34 ++
+ include/gui/dpframework/DpBlitStream.h | 211 ++++++++
+ include/gui/dpframework/DpDataType.h   | 376 ++++++++++++++
+ libs/gui/Android.mk                    |   5 +
+ libs/gui/GLConsumer.cpp                | 645 ++++++++++++++++++++++++-
+ 5 files changed, 1253 insertions(+), 18 deletions(-)
+ create mode 100644 include/gui/dpframework/DpBlitStream.h
+ create mode 100644 include/gui/dpframework/DpDataType.h
+
+diff --git a/include/gui/GLConsumer.h b/include/gui/GLConsumer.h
+index 6267625..c89f191 100644
+--- a/include/gui/GLConsumer.h
++++ b/include/gui/GLConsumer.h
+@@ -30,6 +30,11 @@
+ #include <utils/Vector.h>
+ #include <utils/threads.h>
+ 
++#ifdef MTK_HARDWARE
++// Vendor dpframework blitter (global namespace); only held by pointer here.
++class DpBlitStream;
++#endif
++
+ namespace android {
+ // ----------------------------------------------------------------------------
+ 
+@@ -89,6 +94,10 @@ public:
+     GLConsumer(const sp<IGraphicBufferConsumer>& bq, uint32_t texureTarget,
+             bool useFenceSync, bool isControlledByApp);
+ 
++#ifdef MTK_HARDWARE
++    virtual ~GLConsumer();
++#endif
++
+     // updateTexImage acquires the most recently queued buffer, and sets the
+     // image contents of the target texture to it.
+     //
+@@ -369,6 +378,14 @@ private:
+     // before the outstanding accesses have completed.
+     status_t syncForReleaseLocked(EGLDisplay dpy);
+ 
++#ifdef MTK_HARDWARE
++    status_t bindAuxTextureImageLocked(const sp<GraphicBuffer>& src);
++    status_t convertToAuxSlotLocked(const sp<GraphicBuffer>& src, size_t slotIndex);
++    status_t waitAuxSlotFenceLocked(size_t slotIndex);
++    status_t fenceCurrentAuxTextureLocked();
++    status_t freeAuxSlotLocked(size_t slotIndex);
++#endif
++
+     // returns a graphic buffer used when the texture image has been released
+     static sp<GraphicBuffer> getDebugTexImageBuffer();
+ 
+@@ -438,6 +455,23 @@ private:
+     // browser's tile cache exceeds.
+     const uint32_t mTexTarget;
+ 
++#ifdef MTK_HARDWARE
++    struct AuxSlot {
++        sp<GraphicBuffer> buffer;
++        EGLImageKHR image;
++        EGLSyncKHR fence;
++        // Cached ION fd of buffer (owned by its handle); -1 when not looked up.
++        int ionFd;
++        AuxSlot() : image(EGL_NO_IMAGE_KHR), fence(EGL_NO_SYNC_KHR), ionFd(-1) {}
++    };
++    AuxSlot mAuxSlots[2];
++    int mCurrentAuxSlot;
++    int mNextAuxSlot;
++    bool mCurrentTextureIsAux;
++    // Lazily created, reused for every NV12_BLK conversion. Guarded by mMutex.
++    DpBlitStream* mBlit;
++#endif
++
+     // EGLSlot contains the information and object references that
+     // GLConsumer maintains about a BufferQueue buffer slot.
+     struct EglSlot {
+diff --git a/include/gui/dpframework/DpBlitStream.h b/include/gui/dpframework/DpBlitStream.h
+new file mode 100644
+index 0000000..4cddc31
+--- /dev/null
++++ b/include/gui/dpframework/DpBlitStream.h
+@@ -0,0 +1,211 @@
++#ifndef __DP_BLIT_STREAM_H__
++#define __DP_BLIT_STREAM_H__
++
++#include "DpDataType.h"
++
++class DpBlitStream
++{
++public:
++    static bool queryHWSupport(uint32_t srcWidth,
++                               uint32_t srcHeight,
++                               uint32_t dstWidth,
++                               uint32_t dstHeight,
++                               int32_t  Orientation = 0);
++
++    DpBlitStream();
++
++    ~DpBlitStream();
++
++    enum DpOrientation
++    {
++        ROT_0   = 0x00000000,
++        FLIP_H  = 0x00000001,
++        FLIP_V  = 0x00000002,
++        ROT_90  = 0x00000004,
++        ROT_180 = FLIP_H|FLIP_V,
++        ROT_270 = ROT_180|ROT_90,
++        ROT_INVALID = 0x80
++    };
++
++    DP_STATUS_ENUM setSrcBuffer(void     *pVABase,
++                                uint32_t size);
++
++    DP_STATUS_ENUM setSrcBuffer(void     **pVAList,
++                                uint32_t *pSizeList,
++                                uint32_t planeNumber);
++
++    // VA + MVA address interface
++    DP_STATUS_ENUM setSrcBuffer(void**   pVAddrList,
++                                void**   pMVAddrList,
++                                uint32_t *pSizeList,
++                                uint32_t planeNumber);
++
++    // for ION file descriptor
++    DP_STATUS_ENUM setSrcBuffer(int32_t  fileDesc,
++                                uint32_t *sizeList,
++                                uint32_t planeNumber);
++
++    DP_STATUS_ENUM setSrcConfig(int32_t           width,
++                                int32_t           height,
++                                DpColorFormat     format,
++                                DpInterlaceFormat field = eInterlace_None,
++                                DpRect            *pROI = 0);
++
++    DP_STATUS_ENUM setSrcConfig(int32_t           width,
++                                int32_t           height,
++                                int32_t           yPitch,
++                                int32_t           uvPitch,
++                                DpColorFormat     format,
++                                DP_PROFILE_ENUM   profile = DP_PROFILE_BT601,
++                                DpInterlaceFormat field   = eInterlace_None,
++                                DpRect            *pROI   = 0,
++                                DpSecure          secure  = DP_SECURE_NONE,
++                                bool              doFlush = true);
++
++    DP_STATUS_ENUM setDstBuffer(void     *pVABase,
++                                uint32_t size);
++
++    DP_STATUS_ENUM setDstBuffer(void     **pVABaseList,
++                                uint32_t *pSizeList,
++                                uint32_t planeNumber);
++
++    // VA + MVA address interface
++    DP_STATUS_ENUM setDstBuffer(void**   pVABaseList,
++                                void**   pMVABaseList,
++                                uint32_t *pSizeList,
++                                uint32_t planeNumber);
++
++    // for ION file descriptor
++    DP_STATUS_ENUM setDstBuffer(int32_t  fileDesc,
++                                uint32_t *pSizeList,
++                                uint32_t planeNumber);
++
++    DP_STATUS_ENUM setDstConfig(int32_t           width,
++                                int32_t           height,
++                                DpColorFormat     format,
++                                DpInterlaceFormat field = eInterlace_None,
++                                DpRect            *pROI = 0);
++
++    DP_STATUS_ENUM setDstConfig(int32_t           width,
++                                int32_t           height,
++                                int32_t           yPitch,
++                                int32_t           uvPitch,
++                                DpColorFormat     format,
++                                DP_PROFILE_ENUM   profile = DP_PROFILE_BT601,
++                                DpInterlaceFormat field   = eInterlace_None,
++                                DpRect            *pROI   = 0,
++                                DpSecure          secure  = DP_SECURE_NONE,
++                                bool              doFlush = true);
++
++    DP_STATUS_ENUM setRotate(int32_t rotation)
++    {
++        if ((m_rotation != rotation) ||
++            (mRotate    != rotation))
++        {
++            m_rotation = rotation;
++            mRotate = rotation;
++            m_frameChange = true;
++        }
++
++        return DP_STATUS_RETURN_SUCCESS;
++    }
++
++    //Compatible to 89
++    DP_STATUS_ENUM setFlip(int flip)
++    {
++        if (mFlip != flip)
++        {
++            mFlip = flip;
++            m_flipStatus = ((flip!= 0)? true: false);
++            m_frameChange = true;
++        }
++
++        return DP_STATUS_RETURN_SUCCESS;
++    }
++
++    DP_STATUS_ENUM setOrientation(uint32_t transform);
++
++    DP_STATUS_ENUM setTdshp(int gain)
++    {
++        if (mTdshp != gain)
++        {
++            mTdshp        = gain;
++            m_frameChange = true;
++        }
++
++        return DP_STATUS_RETURN_SUCCESS;
++    }
++
++    DP_STATUS_ENUM setDither(bool enDither)
++    {
++        if (m_ditherStatus != enDither)
++        {
++            m_ditherStatus = enDither;
++            m_frameChange  = true;
++        }
++
++        return DP_STATUS_RETURN_SUCCESS;
++    }
++
++    DP_STATUS_ENUM setAdaptiveLuma(bool enADL)
++    {
++        m_adaptiveLuma = enADL;
++
++        return DP_STATUS_RETURN_SUCCESS;
++    }
++
++    DP_STATUS_ENUM invalidate();
++
++    // for dump register
++    void enableDumpReg(unsigned int flags){mDumpRegFlags = flags;}
++
++private:
++    DpStream          *m_pStream;
++    DpChannel         *m_pChannel;
++    int32_t           m_channelID;
++    DpBasicBufferPool *m_pSrcPool;
++    DpBasicBufferPool *m_pDstPool;
++    int32_t           m_srcBuffer;
++    int32_t           m_srcWidth;
++    int32_t           m_srcHeight;
++    int32_t           m_srcYPitch;
++    int32_t           m_srcUVPitch;
++    DpColorFormat     m_srcFormat;
++    DP_PROFILE_ENUM   m_srcProfile;
++    DpSecure          m_srcSecure;
++    bool              m_srcFlush;
++    int32_t           m_dstBuffer;
++    int32_t           m_dstWidth;
++    int32_t           m_dstHeight;
++    int32_t           m_dstYPitch;
++    int32_t           m_dstUVPitch;
++    DpColorFormat     m_dstFormat;
++    DP_PROFILE_ENUM   m_dstProfile;
++    DpSecure          m_dstSecure;
++    bool              m_dstFlush;
++    int32_t           m_cropXStart;
++    int32_t           m_cropYStart;
++    int32_t           m_cropWidth;
++    int32_t           m_cropHeight;
++    int32_t           m_rotation;
++    bool              m_frameChange;
++    bool              m_flipStatus;
++    bool              m_ditherStatus;
++    bool              m_adaptiveLuma;
++    //Compatible to 89
++    int mRotate;
++    int mFlip;
++    int mTdshp;
++
++    DpStream    *mStream;
++    DpChannel   *mChannel;
++    DpBufferPool *mSrcPool;
++    DpBufferPool *mDstPool;
++    DpPortOption *mSrcPort;
++    DpPortOption *mDstPort;
++    int mSrcBufferId;
++    int mDstBufferId;
++    unsigned int mDumpRegFlags;
++};
++
++#endif  // __DP_BLIT_STREAM_H__
+diff --git a/include/gui/dpframework/DpDataType.h b/include/gui/dpframework/DpDataType.h
+new file mode 100644
+index 0000000..c5f9f56
+--- /dev/null
++++ b/include/gui/dpframework/DpDataType.h
+@@ -0,0 +1,376 @@
++#ifndef __DP_DATA_TYPE_H__
++#define __DP_DATA_TYPE_H__
++
++#ifndef __KERNEL__
++//#include "DpConfig.h"
++
++#include <stdio.h>
++#include <stdlib.h>
++#include <assert.h>
++#include <string.h>
++#include <math.h>
++#endif
++
++#ifndef MAX
++    #define MAX(x, y)   ((x) >= (y))? (x): (y)
++#endif // MAX
++
++#ifndef MIN
++    #define MIN(x, y)   ((x) <= (y))? (x): (y)
++#endif  // MIN
++
++#ifndef __KERNEL__
++class DpStream;
++class DpChannel;
++
++class DpBasicBufferPool;
++
++class DpBufferPool;
++class DpPortOption;
++#endif
++
++typedef unsigned int DpEngineType;
++
++typedef enum DP_STATUS_ENUM
++{
++    DP_STATUS_ABORTED_BY_USER   =  4,
++    DP_STATUS_ALL_TEST_DONE     =  3,
++    DP_STATUS_ALL_TPIPE_DONE    =  2,
++    DP_STATUS_BUFFER_DONE       =  1,
++    DP_STATUS_RETURN_SUCCESS    =  0,
++    DP_STATUS_INVALID_PARAX     = -1,
++    DP_STATUS_INVALID_PORT      = -2,
++    DP_STATUS_INVALID_PATH      = -3,
++    DP_STATUS_INVALID_FILE      = -4,
++    DP_STATUS_INVALID_CHANNEL   = -5,
++    DP_STATUS_INVALID_BUFFER    = -6,
++    DP_STATUS_INVALID_STATE     = -7,
++    DP_STATUS_INVALID_ENGINE    = -8,
++    DP_STATUS_INVALID_FORMAT    = -9,
++    DP_STATUS_INVALID_X_INPUT   = -10,
++    DP_STATUS_INVALID_Y_INPUT   = -11,
++    DP_STATUS_INVALID_X_OUTPUT  = -12,
++    DP_STATUS_INVALID_Y_OUTPUT  = -13,
++    DP_STATUS_INVALID_X_ALIGN   = -14,
++    DP_STATUS_INVALID_Y_ALIGN   = -15,
++    DP_STATUS_INVALID_WIDTH     = -16,
++    DP_STATUS_INVALID_HEIGHT    = -17,
++    DP_STATUS_INVALID_CROP      = -18,
++    DP_STATUS_INVALID_ANGLE     = -19,
++    DP_STATUS_INVALID_EVENT     = -20,
++    DP_STATUS_INVALID_OPCODE    = -21,
++    DP_STATUS_CAN_NOT_MERGE     = -22,
++    DP_STATUS_OUT_OF_MEMORY     = -23,
++    DP_STATUS_BUFFER_FULL       = -24,
++    DP_STATUS_BUFFER_EMPTY      = -25,
++    DP_STATUS_OPERATION_FAILED  = -26,
++    DP_STATUS_OVER_MAX_BRANCH   = -27,
++    DP_STATUS_OVER_MAX_ENGINE   = -28,
++    DP_STATUS_OVER_MAX_BACKUP   = -29,
++    DP_STATUS_SCHEDULE_ERROR    = -30,
++    DP_STATUS_OVER_MAX_WIDTH    = -31,
++    DP_STATUS_OVER_MAX_HEIGHT   = -32,
++    DP_STATUS_LEFT_EDGE_ERROR   = -33,
++    DP_STATUS_RIGHT_EDGE_ERROR  = -34,
++    DP_STATUS_TOP_EDGE_ERROR    = -35,
++    DP_STATUS_BOTTOM_EDGE_ERROR = -36,
++    DP_STATUS_X_LESS_THAN_LAST  = -37,
++    DP_STATUS_Y_LESS_THAN_LAST  = -38,
++    DP_STATUS_UNWANTED_X_CAL    = -39,
++    DP_STATUS_LOSS_OVER_WIDTH   = -40,
++    DP_STATUS_LOSS_OVER_HEIGHT  = -41,
++    DP_STATUS_X_ALIGN_ERROR     = -42,
++    DP_STATUS_Y_ALIGN_ERROR     = -43,
++    DP_STATUS_X_OUT_OVERLAP     = -44,
++    DP_STATUS_Y_OUT_OVERLAP     = -45,
++    DP_STATUS_BACK_LE_FORWARD   = -46,
++    DP_STATUS_UNKNOWN_ERROR     = -47,
++} DP_STATUS_ENUM;
++
++
++typedef enum DP_MEMORY_ENUM
++{
++    DP_MEMORY_VA,
++    DP_MEMORY_ION,
++    DP_MEMORY_PHY,
++    DP_MEMORY_MVA
++} DP_MEMORY_ENUM;
++
++typedef struct DpJPEGEnc_Config_st // for JPEG port only
++{
++    int32_t     fileDesc;
++    uint32_t    size;
++    uint32_t    fQuality;
++    uint32_t    soi_en;
++    uint32_t    memSWAddr[3];
++}DpJPEGEnc_Config;
++#ifndef __KERNEL__
++class DpRect
++{
++public:
++
++	enum
++    {
++        eINVALID_VALUE = -1,
++		eINITIAL_VALUE = 0   //TBD, why to set as "0"?
++    };
++
++	inline DpRect(void)
++		:x(eINITIAL_VALUE), sub_x(eINITIAL_VALUE),
++		 y(eINITIAL_VALUE),	sub_y(eINITIAL_VALUE),
++		 w(eINITIAL_VALUE), h(eINITIAL_VALUE)
++	{;}
++
++	inline DpRect(int32_t in_x, int32_t in_y, int32_t in_w,int32_t in_h,
++				int32_t in_sub_x=0,int32_t in_sub_y=0)
++	{
++		this->x = in_x;
++		this->y = in_y;
++		this->w = in_w;
++		this->h = in_h;
++		this->sub_x = in_sub_x;
++		this->sub_y = in_sub_y;
++	}
++
++	inline DpRect(const DpRect& rt)
++	{
++		this->x = rt.x;
++		this->y = rt.y;
++		this->w = rt.w;
++		this->h = rt.h;
++		this->sub_x = rt.sub_x;
++		this->sub_y = rt.sub_y;
++	}
++	~DpRect(void){;}
++
++    inline DpRect& operator=  (const DpRect rval)
++	{
++		this->x = rval.x;
++		this->y = rval.y;
++		this->w = rval.w;
++		this->h = rval.h;
++		this->sub_x = rval.sub_x;
++		this->sub_y = rval.sub_y;
++		return *this;
++	}
++
++    int32_t x;
++	int32_t sub_x;
++    int32_t y;
++	int32_t sub_y;
++    int32_t w;
++    int32_t h;
++};
++#endif
++
++typedef enum DP_PROFILE_ENUM
++{
++    DP_PROFILE_BT601,
++    DP_PROFILE_BT709,
++    DP_PROFILE_JPEG
++} DP_PROFILE_ENUM;
++
++
++//FMT GROUP , 0-RGB , 1-YUV , 2-Bayer raw , 3-compressed format
++#define DP_COLORFMT_PACK(VIDEO, PLANE, COPLANE, HFACTOR, VFACTOR, BITS, GROUP ,SWAP_ENABLE, UNIQUEID)  \
++    ((VIDEO         << 27) |                                                             \
++     (PLANE         << 24) |                                                             \
++     (COPLANE       << 22) |                                                             \
++     (HFACTOR       << 20) |                                                             \
++     (VFACTOR       << 18) |                                                             \
++     (BITS          << 8)  |                                                             \
++     (GROUP         << 6)  |                                                             \
++     (SWAP_ENABLE   << 5)  |                                                             \
++     (UNIQUEID      << 0))
++
++#define DP_COLOR_GET_UFP_ENABLE(color)          ((0x20000000 & color) >> 29)
++#define DP_COLOR_GET_INTERLACED_MODE(color)     ((0x10000000 & color) >> 28)
++#define DP_COLOR_GET_BLOCK_MODE(color)          ((0x18000000 & color) >> 27)
++#define DP_COLOR_GET_PLANE_COUNT(color)         ((0x07000000 & color) >> 24)
++#define DP_COLOR_IS_UV_COPLANE(color)           ((0x00C00000 & color) >> 22)
++#define DP_COLOR_GET_H_SUBSAMPLE(color)         ((0x00300000 & color) >> 20)
++#define DP_COLOR_GET_V_SUBSAMPLE(color)         ((0x000C0000 & color) >> 18)
++#define DP_COLOR_BITS_PER_PIXEL(color)          ((0x0003FF00 & color) >>  8)
++#define DP_COLOR_GET_COLOR_GROUP(color)         ((0x000000C0 & color) >>  6)
++#define DP_COLOR_GET_SWAP_ENABLE(color)         ((0x00000020 & color) >>  5)
++#define DP_COLOR_GET_UNIQUE_ID(color)           ((0x0000001F & color) >>  0)
++#define DP_COLOR_GET_HW_FORMAT(color)           ((0x0000001F & color) >>  0)
++
++
++typedef enum DP_COLOR_ENUM
++{
++    DP_COLOR_FULLG8         = DP_COLORFMT_PACK(0,   1,  0, 0, 0,  8, 3,  0, 20),
++    DP_COLOR_FULLG10        = DP_COLORFMT_PACK(0,   1,  0, 0, 0, 10, 3,  0, 21),
++    DP_COLOR_FULLG12        = DP_COLORFMT_PACK(0,   1,  0, 0, 0, 12, 3,  0, 22),
++    DP_COLOR_FULLG14        = DP_COLORFMT_PACK(0,   1,  0, 0, 0, 14, 3,  0, 26),
++    DP_COLOR_UFO10          = DP_COLORFMT_PACK(0,   1,  0, 0, 0, 10, 3,  0, 27),
++    DP_COLOR_BAYER8         = DP_COLORFMT_PACK(0,   1,  0, 0, 0,  8, 2,  0, 20),
++    DP_COLOR_BAYER10        = DP_COLORFMT_PACK(0,   1,  0, 0, 0, 10, 2,  0, 21),
++    DP_COLOR_BAYER12        = DP_COLORFMT_PACK(0,   1,  0, 0, 0, 12, 2,  0, 22),
++    DP_COLOR_RGB565         = DP_COLORFMT_PACK(0,   1,  0, 0, 0, 16, 0,  0, 0),
++    DP_COLOR_BGR565         = DP_COLORFMT_PACK(0,   1,  0, 0, 0, 16, 0,  1, 0),
++    DP_COLOR_RGB888         = DP_COLORFMT_PACK(0,   1,  0, 0, 0, 24, 0,  1, 1),
++    DP_COLOR_BGR888         = DP_COLORFMT_PACK(0,   1,  0, 0, 0, 24, 0,  0, 1),
++    DP_COLOR_RGBA8888       = DP_COLORFMT_PACK(0,   1,  0, 0, 0, 32, 0,  1, 2),
++    DP_COLOR_BGRA8888       = DP_COLORFMT_PACK(0,   1,  0, 0, 0, 32, 0,  0, 2),
++    DP_COLOR_ARGB8888       = DP_COLORFMT_PACK(0,   1,  0, 0, 0, 32, 0,  1, 3),
++    DP_COLOR_ABGR8888       = DP_COLORFMT_PACK(0,   1,  0, 0, 0, 32, 0,  0, 3),
++    DP_COLOR_I420           = DP_COLORFMT_PACK(0,   3,  0, 1, 1,  8, 1,  0, 8),
++    DP_COLOR_YV12           = DP_COLORFMT_PACK(0,   3,  0, 1, 1,  8, 1,  1, 8),
++    DP_COLOR_NV12           = DP_COLORFMT_PACK(0,   2,  1, 1, 1,  8, 1,  0, 12),
++    DP_COLOR_NV21           = DP_COLORFMT_PACK(0,   2,  1, 1, 1,  8, 1,  1, 12),
++    DP_COLOR_I422           = DP_COLORFMT_PACK(0,   3,  0, 1, 0,  8, 1,  0, 9),
++    DP_COLOR_YV16           = DP_COLORFMT_PACK(0,   3,  0, 1, 0,  8, 1,  1, 9),
++    DP_COLOR_NV16           = DP_COLORFMT_PACK(0,   2,  1, 1, 0,  8, 1,  0, 13),
++    DP_COLOR_NV61           = DP_COLORFMT_PACK(0,   2,  1, 1, 0,  8, 1,  1, 13),
++    DP_COLOR_YUYV           = DP_COLORFMT_PACK(0,   1,  0, 1, 0, 16, 1,  0, 5),
++    DP_COLOR_YVYU           = DP_COLORFMT_PACK(0,   1,  0, 1, 0, 16, 1,  1, 5),
++    DP_COLOR_UYVY           = DP_COLORFMT_PACK(0,   1,  0, 1, 0, 16, 1,  0, 4),
++    DP_COLOR_VYUY           = DP_COLORFMT_PACK(0,   1,  0, 1, 0, 16, 1,  1, 4),
++    DP_COLOR_I444           = DP_COLORFMT_PACK(0,   3,  0, 0, 0,  8, 1,  0, 10),
++    DP_COLOR_YV24           = DP_COLORFMT_PACK(0,   3,  0, 0, 0,  8, 1,  1, 10),
++    DP_COLOR_IYU2           = DP_COLORFMT_PACK(0,   1,  0, 0, 0, 24, 1,  0, 25),
++    DP_COLOR_NV24           = DP_COLORFMT_PACK(0,   2,  1, 0, 0,  8, 1,  0, 14),
++    DP_COLOR_NV42           = DP_COLORFMT_PACK(0,   2,  1, 0, 0,  8, 1,  1, 14),
++    DP_COLOR_GREY           = DP_COLORFMT_PACK(0,   1,  0, 0, 0,  8, 1,  0, 7),
++
++
++    // Mediatek proprietary format
++    DP_COLOR_420_BLKP_UFO   = DP_COLORFMT_PACK(5,   2,  1, 1, 1, 256, 1, 0, 12),//Frame mode + Block mode
++    DP_COLOR_420_BLKP       = DP_COLORFMT_PACK(1,   2,  1, 1, 1, 256, 1, 0, 12),//Frame mode + Block mode
++    DP_COLOR_420_BLKI       = DP_COLORFMT_PACK(3,   2,  1, 1, 1, 256, 1, 0, 12),//Field mode + Block mode
++    DP_COLOR_422_BLKP       = DP_COLORFMT_PACK(1,   1,  0, 1, 0, 512, 1, 0, 4), //Frame mode
++    DP_COLOR_YUY2           = DP_COLORFMT_PACK(0,   1,  0, 1, 0, 16,  1, 0, 5), //
++    DP_COLOR_PARGB8888      = DP_COLORFMT_PACK(0,   1,  0, 0, 0, 32,  0, 0, 26),
++    DP_COLOR_XARGB8888      = DP_COLORFMT_PACK(0,   1,  0, 0, 0, 32,  0, 0, 27),
++    DP_COLOR_PABGR8888      = DP_COLORFMT_PACK(0,   1,  0, 0, 0, 32,  0, 0, 28),
++    DP_COLOR_XABGR8888      = DP_COLORFMT_PACK(0,   1,  0, 0, 0, 32,  0, 0, 29),
++
++    DP_COLOR_YUV444         = DP_COLORFMT_PACK(0,   1,  0, 0, 0, 24,  1, 0, 30),
++//    DP_COLOR_YUV422I 		    = DP_COLORFMT_PACK(1,  0, 1, 0, 16, 1, 41),//Dup to DP_COLOR_YUYV
++//    DP_COLOR_Y800   	      = DP_COLORFMT_PACK(1,  0, 1, 0, 8, 1, 42),//Dup to DP_COLOR_GREY
++//    DP_COLOR_COMPACT_RAW1	  = DP_COLORFMT_PACK(1,  0, 1, 0, 10, 2, 43),//Dup to Bayer10
++//    DP_COLOR_420_3P_YVU     = DP_COLORFMT_PACK(3,  0, 1, 1,  8, 1, 44),//Dup to DP_COLOR_YV12
++} DP_COLOR_ENUM;
++
++
++// Legacy for 6589 compatible
++typedef DP_COLOR_ENUM DpColorFormat;
++
++#define eYUV_420_3P             DP_COLOR_I420
++#define eYUV_420_2P_YUYV        DP_COLOR_YUYV
++#define eYUV_420_2P_UYVY        DP_COLOR_UYVY
++#define eYUV_420_2P_YVYU        DP_COLOR_YVYU
++#define eYUV_420_2P_VYUY        DP_COLOR_VYUY
++#define eYUV_420_2P_ISP_BLK     DP_COLOR_420_BLKP
++#define eYUV_420_2P_VDO_BLK     DP_COLOR_420_BLKI
++#define eYUV_422_3P             DP_COLOR_I422
++#define eYUV_422_2P             DP_COLOR_NV16
++#define eYUV_422_I              DP_COLOR_YUYV
++#define eYUV_422_I_BLK          DP_COLOR_422_BLKP
++#define eYUV_444_3P             DP_COLOR_I444
++#define eYUV_444_2P             DP_COLOR_NV24
++#define eYUV_444_1P             DP_COLOR_YUV444
++#define eBAYER8                 DP_COLOR_BAYER8
++#define eBAYER10                DP_COLOR_BAYER10
++#define eBAYER12                DP_COLOR_BAYER12
++#define eRGB565                 DP_COLOR_RGB565
++#define eBGR565                 DP_COLOR_BGR565
++#define eRGB888                 DP_COLOR_RGB888
++#define eBGR888                 DP_COLOR_BGR888
++#define eARGB8888               DP_COLOR_ARGB8888
++#define eABGR8888               DP_COLOR_ABGR8888
++#define DP_COLOR_XRGB8888       DP_COLOR_ARGB8888
++#define DP_COLOR_XBGR8888       DP_COLOR_ABGR8888
++#define eRGBA8888               DP_COLOR_RGBA8888
++#define eBGRA8888               DP_COLOR_BGRA8888
++#define eXRGB8888               DP_COLOR_XRGB8888
++#define eXBGR8888               DP_COLOR_XBGR8888
++#define DP_COLOR_RGBX8888       DP_COLOR_RGBA8888
++#define DP_COLOR_BGRX8888       DP_COLOR_BGRA8888
++#define eRGBX8888               DP_COLOR_RGBX8888
++#define eBGRX8888               DP_COLOR_BGRX8888
++#define ePARGB8888              DP_COLOR_PARGB8888
++#define eXARGB8888              DP_COLOR_XARGB8888
++#define ePABGR8888              DP_COLOR_PABGR8888
++#define eXABGR8888              DP_COLOR_XABGR8888
++#define eGREY                   DP_COLOR_GREY
++#define eI420                   DP_COLOR_I420
++#define eYV12                   DP_COLOR_YV12
++#define eIYU2                   DP_COLOR_IYU2
++
++
++#define eYV21                   DP_COLOR_I420
++#define eNV12_BLK               DP_COLOR_420_BLKP
++#define eNV12_BLK_FCM           DP_COLOR_420_BLKI
++#define eYUV_420_3P_YVU         DP_COLOR_YV12
++
++#define eNV12_BP                DP_COLOR_420_BLKP
++#define eNV12_BI                DP_COLOR_420_BLKI
++#define eNV12                   DP_COLOR_NV12
++#define eNV21                   DP_COLOR_NV21
++#define eI422                   DP_COLOR_I422
++#define eYV16                   DP_COLOR_YV16
++#define eNV16                   DP_COLOR_NV16
++#define eNV61                   DP_COLOR_NV61
++#define eUYVY                   DP_COLOR_UYVY
++#define eVYUY                   DP_COLOR_VYUY
++#define eYUYV                   DP_COLOR_YUYV
++#define eYVYU                   DP_COLOR_YVYU
++#define eUYVY_BP                DP_COLOR_422_BLKP
++#define eI444                   DP_COLOR_I444
++#define eNV24                   DP_COLOR_NV24
++#define eNV42                   DP_COLOR_NV42
++#define eYUY2                   DP_COLOR_YUY2
++#define eY800                   DP_COLOR_GREY
++//#define eIYU2
++#define eMTKYUV                 DP_COLOR_422_BLKP
++
++#define eCompactRaw1            DP_COLOR_BAYER10
++
++
++enum DpInterlaceFormat
++{
++    eInterlace_None,
++    eTop_Field,
++    eBottom_Field
++};
++
++enum DpSecure
++{
++    DP_SECURE_NONE  = 0,
++    DP_SECURE       = 1,
++    DP_SECURE_SHIFT = 8
++};
++
++#define MAX_NUM_READBACK_REGS (20)
++
++#ifndef __KERNEL__
++struct DpPortOption
++{
++    int width;
++    int height;
++    DpRect ROI;
++    DpColorFormat format;
++    DpInterlaceFormat interlace;
++
++    enum DpPort
++    {
++        eLCD0_PORT,
++        eLCD1_PORT,
++        eHDMI_PORT,
++        eTVOUT_PORT,
++        eOVERLAY_PORT,
++        eVIRTUAL_PORT,
++        eMEMORY_PORT
++    };
++
++    DpPort port;
++
++    int overlayID;              // setting if choose port = eOVERLAY
++    int virtualID;              // setting if choose port = eVIRTUAL_PORT
++    DpBufferPool *buffer;       // setting if choose port = eMEMORY
++};
++#endif  // __KERNEL__
++
++#endif  // __DP_DATA_TYPE_H__
+diff --git a/libs/gui/Android.mk b/libs/gui/Android.mk
+index 0889aaf..bd49d22 100644
+--- a/libs/gui/Android.mk
++++ b/libs/gui/Android.mk
+@@ -96,6 +96,11 @@ ifeq ($(TARGET_BOARD_PLATFORM), tegra3)
+ 	LOCAL_CFLAGS += -DDONT_USE_FENCE_SYNC
+ endif
+ 
++ifeq ($(strip $(BOARD_USES_MTK_HARDWARE)),true)
++LOCAL_CFLAGS += -DMTK_HARDWARE
++LOCAL_SHARED_LIBRARIES += libdpframework libhardware
++endif
++
+ ifeq ($(TARGET_NO_SENSOR_PERMISSION_CHECK),true)
+ LOCAL_CPPFLAGS += -DNO_SENSOR_PERMISSION_CHECK
+ endif
+diff --git a/libs/gui/GLConsumer.cpp b/libs/gui/GLConsumer.cpp
+index 10e999c..03dabd5 100644
+--- a/libs/gui/GLConsumer.cpp
++++ b/libs/gui/GLConsumer.cpp
+@@ -42,6 +42,18 @@
+ #include <utils/String8.h>
+ #include <utils/Trace.h>
+ 
++#ifdef MTK_HARDWARE
++#include <hardware/gralloc.h>
++#include <gui/dpframework/DpBlitStream.h>
++#include <cutils/native_handle.h>
++#include <limits.h>
++#include <pthread.h>
++
++#ifndef HAL_PIXEL_FORMAT_NV12_BLK
++#define HAL_PIXEL_FORMAT_NV12_BLK 0x101
++#endif
++#endif
++
+ EGLAPI const char* eglQueryStringImplementationANDROID(EGLDisplay dpy, EGLint name);
+ #define CROP_EXT_STR "EGL_ANDROID_image_crop"
+ #define PROT_CONTENT_EXT_STR "EGL_EXT_protected_content"
+@@ -56,6 +68,92 @@ namespace android {
+ #define GLC_LOGW(x, ...) ALOGW("[%s] " x, mName.string(), ##__VA_ARGS__)
+ #define GLC_LOGE(x, ...) ALOGE("[%s] " x, mName.string(), ##__VA_ARGS__)
+ 
++#ifdef MTK_HARDWARE
++// Private ABI view of gralloc's optional "extra" device. Keep this local to
++// GLConsumer rather than adding getIonFd() to GraphicBuffer/GraphicBufferMapper.
++// The field order must match the vendor gralloc_extra.h ABI on this target.
++struct GLConsumerGrallocExtraDevice {
++    hw_device_t common;
++    int (*getIonFd)(GLConsumerGrallocExtraDevice* dev,
++            buffer_handle_t handle, int* idx, int* num);
++    void* reserved_proc[7];
++};
++
++static pthread_once_t gGLConsumerGrallocExtraOnce = PTHREAD_ONCE_INIT;
++static pthread_mutex_t gGLConsumerGrallocExtraMutex = PTHREAD_MUTEX_INITIALIZER;
++static GLConsumerGrallocExtraDevice* gGLConsumerGrallocExtraDevice = NULL;
++static int gGLConsumerGrallocExtraInitStatus = -1;
++
++static void initGLConsumerGrallocExtra() {
++    const hw_module_t* module = NULL;
++    int err = hw_get_module(GRALLOC_HARDWARE_MODULE_ID, &module);
++    if (err != 0 || module == NULL || module->methods == NULL ||
++            module->methods->open == NULL) {
++        ALOGE("GLConsumer: unable to load gralloc module for extra device: %d", err);
++        gGLConsumerGrallocExtraInitStatus = err != 0 ? err : -1;
++        return;
++    }
++
++    hw_device_t* device = NULL;
++    err = module->methods->open(module, "extra", &device);
++    if (err != 0 || device == NULL) {
++        ALOGE("GLConsumer: unable to open gralloc extra device: %d", err);
++        gGLConsumerGrallocExtraInitStatus = err != 0 ? err : -1;
++        return;
++    }
++
++    gGLConsumerGrallocExtraDevice =
++            reinterpret_cast<GLConsumerGrallocExtraDevice*>(device);
++    if (gGLConsumerGrallocExtraDevice->getIonFd == NULL) {
++        ALOGE("GLConsumer: gralloc extra device has no getIonFd callback");
++        gGLConsumerGrallocExtraDevice = NULL;
++        gGLConsumerGrallocExtraInitStatus = -1;
++        return;
++    }
++    // The device is intentionally kept open for the process lifetime.
++    gGLConsumerGrallocExtraInitStatus = 0;
++}
++
++static status_t getGLConsumerIonFd(buffer_handle_t handle, int* outFd) {
++    if (handle == NULL || outFd == NULL) {
++        return BAD_VALUE;
++    }
++
++    int err = pthread_once(&gGLConsumerGrallocExtraOnce,
++            initGLConsumerGrallocExtra);
++    if (err != 0 || gGLConsumerGrallocExtraInitStatus != 0 ||
++            gGLConsumerGrallocExtraDevice == NULL) {
++        return NO_INIT;
++    }
++
++    int idx = -1;
++    int num = 0;
++    pthread_mutex_lock(&gGLConsumerGrallocExtraMutex);
++    err = gGLConsumerGrallocExtraDevice->getIonFd(
++            gGLConsumerGrallocExtraDevice, handle, &idx, &num);
++    pthread_mutex_unlock(&gGLConsumerGrallocExtraMutex);
++    if (err != 0) {
++        ALOGE("GLConsumer: gralloc extra getIonFd failed: %d", err);
++        return INVALID_OPERATION;
++    }
++
++    // getIonFd returns an index/count into native_handle_t::data. Validate the
++    // complete range before using the first FD for DpBlitStream's FD overload.
++    if (num < 1 || idx < 0 || idx >= handle->numFds ||
++            num > handle->numFds - idx) {
++        ALOGE("GLConsumer: invalid gralloc extra FD range idx=%d num=%d numFds=%d",
++                idx, num, handle->numFds);
++        return BAD_VALUE;
++    }
++    const int fd = handle->data[idx];
++    if (fd < 0) {
++        return BAD_VALUE;
++    }
++    *outFd = fd;
++    return NO_ERROR;
++}
++#endif
++
+ static const struct {
+     uint32_t width, height;
+     char const* bits;
+@@ -170,6 +268,12 @@ GLConsumer::GLConsumer(const sp<IGraphicBufferConsumer>& bq, uint32_t tex,
+     mAttached(true)
+ {
+     GLC_LOGV("GLConsumer");
++#ifdef MTK_HARDWARE
++    mCurrentAuxSlot = -1;
++    mNextAuxSlot = 0;
++    mCurrentTextureIsAux = false;
++    mBlit = NULL;
++#endif
+ 
+     memcpy(mCurrentTransformMatrix, mtxIdentity,
+             sizeof(mCurrentTransformMatrix));
+@@ -198,6 +302,12 @@ GLConsumer::GLConsumer(const sp<IGraphicBufferConsumer>& bq, uint32_t texTarget,
+     mAttached(false)
+ {
+     GLC_LOGV("GLConsumer");
++#ifdef MTK_HARDWARE
++    mCurrentAuxSlot = -1;
++    mNextAuxSlot = 0;
++    mCurrentTextureIsAux = false;
++    mBlit = NULL;
++#endif
+ 
+     memcpy(mCurrentTransformMatrix, mtxIdentity,
+             sizeof(mCurrentTransformMatrix));
+@@ -205,6 +315,15 @@ GLConsumer::GLConsumer(const sp<IGraphicBufferConsumer>& bq, uint32_t texTarget,
+     mConsumer->setConsumerUsageBits(DEFAULT_USAGE_FLAGS);
+ }
+ 
++#ifdef MTK_HARDWARE
++GLConsumer::~GLConsumer() {
++    // The aux EGLImages/buffers are released by abandonLocked()/detach; this
++    // only owns the cached blitter.
++    delete mBlit;
++    mBlit = NULL;
++}
++#endif
++
+ status_t GLConsumer::setDefaultBufferSize(uint32_t w, uint32_t h)
+ {
+     Mutex::Autolock lock(mMutex);
+@@ -420,18 +539,40 @@ status_t GLConsumer::updateAndReleaseLocked(const BufferItem& item,
+         return err;
+     }
+ 
+-    // Ensure we have a valid EglImageKHR for the slot, creating an EglImage
+-    // if nessessary, for the gralloc buffer currently in the slot in
+-    // ConsumerBase.
+-    // We may have to do this even when item.mGraphicBuffer == NULL (which
+-    // means the buffer was previously acquired).
+-    err = mEglSlots[slot].mEglImage->createIfNeeded(mEglDisplay, item.mCrop);
+-    if (err != NO_ERROR) {
+-        GLC_LOGW("updateAndRelease: unable to createImage on display=%p slot=%d",
+-                mEglDisplay, slot);
+-        releaseBufferLocked(slot, mSlots[slot].mGraphicBuffer,
+-                mEglDisplay, EGL_NO_SYNC_KHR);
+-        return UNKNOWN_ERROR;
++    // Ensure the slot has an EglImage wrapper for its GraphicBuffer. The
++    // wrapper also owns the source-buffer reference for release/synchronization;
++    // NV12_BLK skips EGLImage creation, not creation of this wrapper object.
++    // Usually acquireBufferLocked() creates it for a newly allocated buffer,
++    // but recover the wrapper if a previously acquired slot has no wrapper.
++    if (mEglSlots[slot].mEglImage == NULL) {
++        sp<GraphicBuffer> graphicBuffer = item.mGraphicBuffer != NULL
++                ? item.mGraphicBuffer : mSlots[slot].mGraphicBuffer;
++        if (graphicBuffer == NULL) {
++            GLC_LOGE("updateAndRelease: no GraphicBuffer or EglImage for slot=%d", slot);
++            releaseBufferLocked(slot, mSlots[slot].mGraphicBuffer,
++                    mEglDisplay, EGL_NO_SYNC_KHR);
++            return BAD_VALUE;
++        }
++        mEglSlots[slot].mEglImage = new EglImage(graphicBuffer);
++    }
++
++    bool needsEglImage = true;
++#ifdef MTK_HARDWARE
++    const sp<GraphicBuffer>& acquiredBuffer = mSlots[slot].mGraphicBuffer;
++    if (acquiredBuffer != NULL &&
++            acquiredBuffer->getPixelFormat() == HAL_PIXEL_FORMAT_NV12_BLK) {
++        needsEglImage = false;
++    }
++#endif
++    if (needsEglImage) {
++        err = mEglSlots[slot].mEglImage->createIfNeeded(mEglDisplay, item.mCrop);
++        if (err != NO_ERROR) {
++            GLC_LOGW("updateAndRelease: unable to createImage on display=%p slot=%d",
++                    mEglDisplay, slot);
++            releaseBufferLocked(slot, mSlots[slot].mGraphicBuffer,
++                    mEglDisplay, EGL_NO_SYNC_KHR);
++            return UNKNOWN_ERROR;
++        }
+     }
+ 
+     // Do whatever sync ops we need to do before releasing the old slot.
+@@ -461,8 +602,23 @@ status_t GLConsumer::updateAndReleaseLocked(const BufferItem& item,
+     // release old buffer
+     if (mCurrentTexture != BufferQueue::INVALID_BUFFER_SLOT) {
+         if (pendingRelease == nullptr) {
++            sp<GraphicBuffer> currentBuffer;
++            if (mCurrentTextureImage != NULL) {
++                currentBuffer = mCurrentTextureImage->graphicBuffer();
++            }
++            if (currentBuffer == NULL) {
++                currentBuffer = mSlots[mCurrentTexture].mGraphicBuffer;
++            }
++            if (currentBuffer == NULL) {
++                GLC_LOGE("updateAndRelease: no GraphicBuffer for current slot=%d",
++                        mCurrentTexture);
++                // Drop the frame we just acquired so its slot isn't leaked.
++                releaseBufferLocked(slot, mSlots[slot].mGraphicBuffer,
++                        mEglDisplay, EGL_NO_SYNC_KHR);
++                return BAD_VALUE;
++            }
+             status_t status = releaseBufferLocked(
+-                    mCurrentTexture, mCurrentTextureImage->graphicBuffer(),
++                    mCurrentTexture, currentBuffer,
+                     mEglDisplay, mEglSlots[mCurrentTexture].mEglFence);
+             if (status < NO_ERROR) {
+                 GLC_LOGE("updateAndRelease: failed to release buffer: %s (%d)",
+@@ -471,9 +627,23 @@ status_t GLConsumer::updateAndReleaseLocked(const BufferItem& item,
+                 // keep going, with error raised [?]
+             }
+         } else {
++            sp<GraphicBuffer> currentBuffer;
++            if (mCurrentTextureImage != NULL) {
++                currentBuffer = mCurrentTextureImage->graphicBuffer();
++            }
++            if (currentBuffer == NULL) {
++                currentBuffer = mSlots[mCurrentTexture].mGraphicBuffer;
++            }
++            if (currentBuffer == NULL) {
++                GLC_LOGE("updateAndRelease: no GraphicBuffer for pending slot=%d",
++                        mCurrentTexture);
++                // Drop the frame we just acquired so its slot isn't leaked.
++                releaseBufferLocked(slot, mSlots[slot].mGraphicBuffer,
++                        mEglDisplay, EGL_NO_SYNC_KHR);
++                return BAD_VALUE;
++            }
+             pendingRelease->currentTexture = mCurrentTexture;
+-            pendingRelease->graphicBuffer =
+-                    mCurrentTextureImage->graphicBuffer();
++            pendingRelease->graphicBuffer = currentBuffer;
+             pendingRelease->display = mEglDisplay;
+             pendingRelease->fence = mEglSlots[mCurrentTexture].mEglFence;
+             pendingRelease->isPending = true;
+@@ -513,6 +683,36 @@ status_t GLConsumer::bindTextureImageLocked() {
+         return NO_INIT;
+     }
+ 
++    // Everything below dereferences the wrapper, so fail cleanly if it's gone
++    // (mCurrentTexture can be valid while the image has been cleared).
++    if (mCurrentTextureImage == NULL) {
++        GLC_LOGE("bindTextureImage: no current texture image for slot=%d",
++                mCurrentTexture);
++        return NO_INIT;
++    }
++
++#ifdef MTK_HARDWARE
++    const sp<GraphicBuffer> currentBuffer = mCurrentTextureImage->graphicBuffer();
++    if (currentBuffer != NULL &&
++            currentBuffer->getPixelFormat() == HAL_PIXEL_FORMAT_NV12_BLK) {
++        return bindAuxTextureImageLocked(currentBuffer);
++    }
++
++    // We're about to point the texture at the source EGLImage instead of an
++    // auxiliary RGBA buffer. Fence the aux buffer's last GL use *before* any
++    // state changes, and bail out with the ownership state intact on failure,
++    // so a later call can retry the fence. syncForReleaseLocked doesn't cover
++    // every caller (shared buffer mode, attachToContext, ...).
++    {
++        status_t auxFenceErr = fenceCurrentAuxTextureLocked();
++        if (auxFenceErr != NO_ERROR) {
++            GLC_LOGE("bindTextureImage: unable to fence auxiliary texture: %d",
++                    auxFenceErr);
++            return auxFenceErr;
++        }
++    }
++#endif
++
+     status_t err = mCurrentTextureImage->createIfNeeded(mEglDisplay,
+                                                         mCurrentCrop);
+     if (err != NO_ERROR) {
+@@ -543,10 +743,340 @@ status_t GLConsumer::bindTextureImageLocked() {
+         }
+     }
+ 
++#ifdef MTK_HARDWARE
++    // The texture now references the source EGLImage rather than an auxiliary
++    // RGBA buffer (already fenced above). Drop auxiliary-slot ownership.
++    mCurrentTextureIsAux = false;
++    mCurrentAuxSlot = -1;
++#endif
++
+     // Wait for the new buffer to be ready.
+     return doGLFenceWaitLocked();
+ }
+ 
++#ifdef MTK_HARDWARE
++status_t GLConsumer::waitAuxSlotFenceLocked(size_t slotIndex) {
++    if (slotIndex >= 2) {
++        return BAD_VALUE;
++    }
++
++    AuxSlot& slot = mAuxSlots[slotIndex];
++    if (slot.fence == EGL_NO_SYNC_KHR) {
++        return NO_ERROR;
++    }
++    if (mEglDisplay == EGL_NO_DISPLAY) {
++        return INVALID_OPERATION;
++    }
++
++    EGLint result = eglClientWaitSyncKHR(
++            mEglDisplay, slot.fence, EGL_SYNC_FLUSH_COMMANDS_BIT_KHR, 1000000000);
++    // EGL_KHR_fence_sync reports a signaled fence as
++    // EGL_CONDITION_SATISFIED_KHR; EGL_ALREADY_SIGNALED_KHR is not an EGL
++    // wait result in this API.
++    if (result != EGL_CONDITION_SATISFIED_KHR) {
++        GLC_LOGE("waitAuxSlotFenceLocked: wait failed or timed out: %#x (egl=%#x)",
++                result, eglGetError());
++        return result == EGL_TIMEOUT_EXPIRED_KHR ? TIMED_OUT : UNKNOWN_ERROR;
++    }
++
++    eglDestroySyncKHR(mEglDisplay, slot.fence);
++    slot.fence = EGL_NO_SYNC_KHR;
++    return NO_ERROR;
++}
++
++status_t GLConsumer::fenceCurrentAuxTextureLocked() {
++    if (!mCurrentTextureIsAux || mCurrentAuxSlot < 0 || mCurrentAuxSlot >= 2) {
++        return NO_ERROR;
++    }
++    if (mEglDisplay == EGL_NO_DISPLAY) {
++        return INVALID_OPERATION;
++    }
++
++    AuxSlot& slot = mAuxSlots[mCurrentAuxSlot];
++    if (slot.fence != EGL_NO_SYNC_KHR) {
++        // Replace the old fence with one ordered after the latest GL use. This
++        // matters if updateTexImage was called without acquiring a new buffer.
++        eglDestroySyncKHR(mEglDisplay, slot.fence);
++        slot.fence = EGL_NO_SYNC_KHR;
++    }
++
++    slot.fence = eglCreateSyncKHR(mEglDisplay, EGL_SYNC_FENCE_KHR, NULL);
++    if (slot.fence == EGL_NO_SYNC_KHR) {
++        GLC_LOGE("fenceCurrentAuxTextureLocked: create fence failed: %#x", eglGetError());
++        return UNKNOWN_ERROR;
++    }
++    glFlush();
++    return NO_ERROR;
++}
++
++status_t GLConsumer::freeAuxSlotLocked(size_t slotIndex) {
++    if (slotIndex >= 2) {
++        return BAD_VALUE;
++    }
++
++    AuxSlot& slot = mAuxSlots[slotIndex];
++    status_t err = waitAuxSlotFenceLocked(slotIndex);
++    if (err != NO_ERROR) {
++        return err;
++    }
++
++    if (slot.image != EGL_NO_IMAGE_KHR) {
++        if (mEglDisplay == EGL_NO_DISPLAY) {
++            // Do not drop the backing GraphicBuffer while an EGLImage may
++            // still refer to it. Leave the slot intact for a later cleanup.
++            return INVALID_OPERATION;
++        }
++        if (!eglDestroyImageKHR(mEglDisplay, slot.image)) {
++            GLC_LOGW("freeAuxSlotLocked: eglDestroyImageKHR failed: %#x", eglGetError());
++        }
++        slot.image = EGL_NO_IMAGE_KHR;
++    }
++
++    slot.buffer.clear();
++    slot.ionFd = -1;
++    return NO_ERROR;
++}
++
++status_t GLConsumer::convertToAuxSlotLocked(
++        const sp<GraphicBuffer>& src, size_t slotIndex) {
++    ATRACE_CALL();
++    if (src == NULL || slotIndex >= 2 ||
++            src->getPixelFormat() != HAL_PIXEL_FORMAT_NV12_BLK) {
++        return BAD_VALUE;
++    }
++    if (src->getUsage() & GRALLOC_USAGE_PROTECTED) {
++        // Protected buffers must not be passed through this non-secure path.
++        GLC_LOGE("convertToAuxSlotLocked: protected NV12_BLK cannot use this path");
++        return INVALID_OPERATION;
++    }
++
++    AuxSlot& dst = mAuxSlots[slotIndex];
++    const uint32_t width = src->getWidth();
++    const uint32_t height = src->getHeight();
++    // DpRect and DpBlitStream's geometry arguments are signed 32-bit values.
++    // The block-format pitch convention used by this DpBlitStream version
++    // multiplies the source width by 32/16. Keep those signed arguments safe.
++    if (width == 0 || height == 0 || width > INT_MAX / 32 ||
++            height > INT_MAX) {
++        return BAD_VALUE;
++    }
++    const int32_t widthI = static_cast<int32_t>(width);
++    const int32_t heightI = static_cast<int32_t>(height);
++
++    if (dst.buffer != NULL &&
++            (dst.buffer->getWidth() != width || dst.buffer->getHeight() != height ||
++             dst.buffer->getPixelFormat() != PIXEL_FORMAT_RGBA_8888)) {
++        status_t err = freeAuxSlotLocked(slotIndex);
++        if (err != NO_ERROR) {
++            return err;
++        }
++    }
++
++    if (dst.buffer == NULL) {
++        // The blitter writes via the allocation FD; the buffer is also sampled
++        // by GL. Avoid SW usage flags so gralloc need not prefer a CPU-mappable
++        // allocation for every video frame.
++        const uint64_t usage = GRALLOC_USAGE_HW_TEXTURE | GRALLOC_USAGE_HW_2D;
++        dst.buffer = new GraphicBuffer(width, height, PIXEL_FORMAT_RGBA_8888,
++                usage, "[GLConsumer NV12_BLK conversion]");
++        if (dst.buffer == NULL || dst.buffer->initCheck() != NO_ERROR ||
++                dst.buffer->handle == NULL) {
++            GLC_LOGE("convertToAuxSlotLocked: failed to allocate RGBA buffer %ux%u",
++                    width, height);
++            dst.buffer.clear();
++            dst.ionFd = -1;
++            return NO_MEMORY;
++        }
++        dst.ionFd = -1;
++    }
++
++    if (dst.image == EGL_NO_IMAGE_KHR) {
++        EGLClientBuffer clientBuffer =
++                static_cast<EGLClientBuffer>(dst.buffer->getNativeBuffer());
++        const EGLint attrs[] = {
++            EGL_IMAGE_PRESERVED_KHR, EGL_TRUE,
++            EGL_NONE,
++        };
++        dst.image = eglCreateImageKHR(mEglDisplay, EGL_NO_CONTEXT,
++                EGL_NATIVE_BUFFER_ANDROID, clientBuffer, attrs);
++        if (dst.image == EGL_NO_IMAGE_KHR) {
++            GLC_LOGE("convertToAuxSlotLocked: eglCreateImageKHR failed: %#x", eglGetError());
++            return UNKNOWN_ERROR;
++        }
++    }
++
++    if (src->handle == NULL || dst.buffer->handle == NULL) {
++        GLC_LOGE("convertToAuxSlotLocked: missing source or destination native handle");
++        return BAD_VALUE;
++    }
++
++    int srcFd = -1;
++    status_t err = getGLConsumerIonFd(src->handle, &srcFd);
++    if (err != NO_ERROR) {
++        GLC_LOGE("convertToAuxSlotLocked: unable to get source ION FD: %d", err);
++        return err;
++    }
++    // The destination fd is owned by the aux buffer's handle and doesn't change
++    // for the buffer's lifetime, so look it up once per allocation.
++    if (dst.ionFd < 0) {
++        err = getGLConsumerIonFd(dst.buffer->handle, &dst.ionFd);
++        if (err != NO_ERROR) {
++            dst.ionFd = -1;
++            GLC_LOGE("convertToAuxSlotLocked: unable to get destination ION FD: %d", err);
++            return err;
++        }
++    }
++    const int dstFd = dst.ionFd;
++
++    const uint32_t srcStrideU = width; // MTK NV12_BLK uses the aligned width.
++    const int32_t srcStride = static_cast<int32_t>(srcStrideU);
++    const uint64_t lumaBytes64 = static_cast<uint64_t>(srcStrideU) * height;
++    if (lumaBytes64 == 0 || lumaBytes64 > UINT_MAX) {
++        return BAD_VALUE;
++    }
++    const uint32_t lumaBytes = static_cast<uint32_t>(lumaBytes64);
++    const uint32_t chromaBytes = lumaBytes / 2;
++    uint32_t srcSizes[2] = { lumaBytes, chromaBytes };
++
++    if (mBlit == NULL) {
++        mBlit = new DpBlitStream();
++    }
++    DpBlitStream& blit = *mBlit;
++    DP_STATUS_ENUM dpStatus = blit.setSrcBuffer(srcFd, srcSizes, 2);
++    if (dpStatus != DP_STATUS_RETURN_SUCCESS) {
++        GLC_LOGE("convertToAuxSlotLocked: setSrcBuffer(FD) failed: %d", dpStatus);
++        return UNKNOWN_ERROR;
++    }
++
++    DpRect srcRoi;
++    srcRoi.x = 0;
++    srcRoi.y = 0;
++    srcRoi.w = widthI;
++    srcRoi.h = heightI;
++    // Match the extended block-format config used by MTK ColorConverter.
++    dpStatus = blit.setSrcConfig(srcStride, heightI, srcStride * 32,
++            srcStride * 16, eNV12_BLK, DP_PROFILE_BT601,
++            eInterlace_None, &srcRoi, DP_SECURE_NONE, 1);
++    if (dpStatus != DP_STATUS_RETURN_SUCCESS) {
++        GLC_LOGE("convertToAuxSlotLocked: setSrcConfig failed: %d", dpStatus);
++        return UNKNOWN_ERROR;
++    }
++
++    const uint32_t dstStrideU = dst.buffer->getStride();
++    const uint32_t dstWidthU = dst.buffer->getWidth();
++    const uint32_t dstHeightU = dst.buffer->getHeight();
++    if (dstStrideU == 0 || dstStrideU > INT_MAX || dstWidthU == 0 ||
++            dstWidthU > INT_MAX || dstHeightU == 0 || dstHeightU > INT_MAX) {
++        return BAD_VALUE;
++    }
++    const int32_t dstWidth = static_cast<int32_t>(dstWidthU);
++    const int32_t dstHeight = static_cast<int32_t>(dstHeightU);
++    const uint64_t dstBytes64 = static_cast<uint64_t>(dstStrideU) *
++            dstHeightU * 4;
++    if (dstBytes64 == 0 || dstBytes64 > UINT_MAX) {
++        return BAD_VALUE;
++    }
++    uint32_t dstSizes[1] = { static_cast<uint32_t>(dstBytes64) };
++    dpStatus = blit.setDstBuffer(dstFd, dstSizes, 1);
++    if (dpStatus != DP_STATUS_RETURN_SUCCESS) {
++        GLC_LOGE("convertToAuxSlotLocked: setDstBuffer failed: %d", dpStatus);
++        return UNKNOWN_ERROR;
++    }
++
++    const uint64_t dstPitch64 = static_cast<uint64_t>(dstStrideU) * 4;
++    if (dstPitch64 == 0 || dstPitch64 > INT_MAX) {
++        return BAD_VALUE;
++    }
++    const int32_t dstPitch = static_cast<int32_t>(dstPitch64);
++    DpRect dstRoi;
++    dstRoi.x = 0;
++    dstRoi.y = 0;
++    dstRoi.w = dstWidth;
++    dstRoi.h = dstHeight;
++    dpStatus = blit.setDstConfig(dstWidth, dstHeight, dstPitch, 0,
++            eRGBA8888, DP_PROFILE_BT601, eInterlace_None, &dstRoi,
++            DP_SECURE_NONE, 1);
++    if (dpStatus != DP_STATUS_RETURN_SUCCESS) {
++        GLC_LOGE("convertToAuxSlotLocked: setDstConfig failed: %d", dpStatus);
++        return UNKNOWN_ERROR;
++    }
++
++    // invalidate() returns DP_STATUS_ENUM; DP_STATUS_RETURN_SUCCESS is zero.
++    DP_STATUS_ENUM blitStatus;
++    {
++        ATRACE_NAME("DpBlitStream::invalidate");
++        blitStatus = blit.invalidate();
++    }
++    if (blitStatus != DP_STATUS_RETURN_SUCCESS) {
++        GLC_LOGE("convertToAuxSlotLocked: DpBlitStream::invalidate failed: %d",
++                blitStatus);
++        return UNKNOWN_ERROR;
++    }
++
++    return NO_ERROR;
++}
++
++status_t GLConsumer::bindAuxTextureImageLocked(const sp<GraphicBuffer>& src) {
++    ATRACE_CALL();
++    if (mEglDisplay == EGL_NO_DISPLAY) {
++        return INVALID_OPERATION;
++    }
++
++    // The source release fence belongs to the decoder buffer. The blitter is
++    // not a GL client, so a GPU-side eglWaitSyncKHR (what doGLFenceWaitLocked
++    // does when native fence sync is available) would not hold it back. Block
++    // the CPU until the producer is done before the blit reads the buffer.
++    status_t err = NO_ERROR;
++    if (mCurrentFence != NULL && mCurrentFence->isValid()) {
++        ATRACE_NAME("NV12_BLK source fence wait");
++        err = mCurrentFence->waitForever("GLConsumer::bindAuxTextureImageLocked");
++        if (err != NO_ERROR) {
++            GLC_LOGE("bindAuxTextureImageLocked: error waiting for source fence: %d",
++                    err);
++            return err;
++        }
++    }
++
++    // Insert a fence after the most recent use of the currently bound aux
++    // texture, including shared-buffer cases where syncForReleaseLocked may
++    // not have been called because the BufferQueue slot did not change.
++    err = fenceCurrentAuxTextureLocked();
++    if (err != NO_ERROR) {
++        return err;
++    }
++
++    const size_t dstIndex = static_cast<size_t>(mNextAuxSlot);
++    {
++        // A long wait here means the GPU is still sampling the slot we want
++        // to overwrite (consider a third aux slot if this shows up in traces).
++        ATRACE_NAME("NV12_BLK aux slot fence wait");
++        err = waitAuxSlotFenceLocked(dstIndex);
++    }
++    if (err != NO_ERROR) {
++        return err;
++    }
++
++    err = convertToAuxSlotLocked(src, dstIndex);
++    if (err != NO_ERROR) {
++        return err;
++    }
++
++    glBindTexture(mTexTarget, mTexName);
++    glEGLImageTargetTexture2DOES(mTexTarget,
++            static_cast<GLeglImageOES>(mAuxSlots[dstIndex].image));
++    GLenum glError = glGetError();
++    if (glError != GL_NO_ERROR) {
++        GLC_LOGE("bindAuxTextureImageLocked: texture bind failed: %#04x", glError);
++        return UNKNOWN_ERROR;
++    }
++
++    mCurrentAuxSlot = static_cast<int>(dstIndex);
++    mNextAuxSlot = 1 - static_cast<int>(dstIndex);
++    mCurrentTextureIsAux = true;
++    return NO_ERROR;
++}
++#endif // MTK_HARDWARE
++
+ status_t GLConsumer::checkAndUpdateEglStateLocked(bool contextCheck) {
+     EGLDisplay dpy = eglGetCurrentDisplay();
+     EGLContext ctx = eglGetCurrentContext();
+@@ -624,6 +1154,19 @@ status_t GLConsumer::detachFromContext() {
+             return err;
+         }
+ 
++#ifdef MTK_HARDWARE
++        for (size_t i = 0; i < 2; ++i) {
++            status_t auxErr = freeAuxSlotLocked(i);
++            if (auxErr != NO_ERROR) {
++                GLC_LOGE("detachFromContext: unable to free auxiliary slot %zu: %d",
++                        i, auxErr);
++                return auxErr;
++            }
++        }
++        mCurrentTextureIsAux = false;
++        mCurrentAuxSlot = -1;
++        mNextAuxSlot = 0;
++#endif
+         glDeleteTextures(1, &mTexName);
+     }
+ 
+@@ -708,8 +1251,22 @@ status_t GLConsumer::syncForReleaseLocked(EGLDisplay dpy) {
+                 return UNKNOWN_ERROR;
+             }
+             sp<Fence> fence(new Fence(fenceFd));
+-            status_t err = addReleaseFenceLocked(mCurrentTexture,
+-                    mCurrentTextureImage->graphicBuffer(), fence);
++            // The source wrapper should normally be present. Use the BufferQueue
++            // slot as a defensive fallback; never dereference a missing wrapper
++            // while SurfaceFlinger is trying to release the current buffer.
++            sp<GraphicBuffer> currentBuffer;
++            if (mCurrentTextureImage != NULL) {
++                currentBuffer = mCurrentTextureImage->graphicBuffer();
++            }
++            if (currentBuffer == NULL) {
++                currentBuffer = mSlots[mCurrentTexture].mGraphicBuffer;
++            }
++            if (currentBuffer == NULL) {
++                GLC_LOGE("syncForReleaseLocked: no GraphicBuffer for current slot=%d",
++                        mCurrentTexture);
++                return BAD_VALUE;
++            }
++            status_t err = addReleaseFenceLocked(mCurrentTexture, currentBuffer, fence);
+             if (err != OK) {
+                 GLC_LOGE("syncForReleaseLocked: error adding release fence: "
+                         "%s (%d)", strerror(-err), err);
+@@ -748,6 +1305,16 @@ status_t GLConsumer::syncForReleaseLocked(EGLDisplay dpy) {
+         }
+     }
+ 
++#ifdef MTK_HARDWARE
++    // The GL texture can be backed by an auxiliary buffer rather than the
++    // current BufferQueue buffer. Fence that buffer separately before it can
++    // be reused by the blitter.
++    status_t auxFenceErr = fenceCurrentAuxTextureLocked();
++    if (auxFenceErr != NO_ERROR) {
++        return auxFenceErr;
++    }
++#endif
++
+     return OK;
+ }
+ 
+@@ -805,8 +1372,17 @@ void GLConsumer::computeCurrentTransformMatrixLocked() {
+         GLC_LOGD("computeCurrentTransformMatrixLocked: "
+                 "mCurrentTextureImage is NULL");
+     }
++    // The EGLImage applies the crop itself when it can; the NV12_BLK auxiliary
++    // RGBA image is created without crop attributes, so the crop must go into
++    // the transform matrix for those buffers.
++    bool cropInImage = isEglImageCroppable(mCurrentCrop);
++#ifdef MTK_HARDWARE
++    if (buf != nullptr && buf->getPixelFormat() == HAL_PIXEL_FORMAT_NV12_BLK) {
++        cropInImage = false;
++    }
++#endif
+     computeTransformMatrix(mCurrentTransformMatrix, buf,
+-        isEglImageCroppable(mCurrentCrop) ? Rect::EMPTY_RECT : mCurrentCrop,
++        cropInImage ? Rect::EMPTY_RECT : mCurrentCrop,
+         mCurrentTransform, mFilteringEnabled);
+ }
+ 
+@@ -859,6 +1435,11 @@ void GLConsumer::computeTransformMatrix(float outTransform[16],
+                 case PIXEL_FORMAT_RGB_888:
+                 case PIXEL_FORMAT_RGB_565:
+                 case PIXEL_FORMAT_BGRA_8888:
++#ifdef MTK_HARDWARE
++                // NV12_BLK is converted to RGBA before sampling, so filtering
++                // uses the RGB sampling margin rather than a subsampled-YUV one.
++                case HAL_PIXEL_FORMAT_NV12_BLK:
++#endif
+                     // We know there's no subsampling of any channels, so we
+                     // only need to shrink by a half a pixel.
+                     shrinkAmount = 0.5;
+@@ -1057,6 +1638,34 @@ void GLConsumer::freeBufferLocked(int slotIndex) {
+ 
+ void GLConsumer::abandonLocked() {
+     GLC_LOGV("abandonLocked");
++#ifdef MTK_HARDWARE
++    // abandonLocked() can be called on a thread without the owning EGL
++    // context current. If the currently-bound auxiliary texture has not been
++    // fenced after its last use, leave the EGLImages intact rather than risk
++    // freeing storage still being sampled by the GPU. The EGLImage's reference
++    // keeps its backing allocation alive; in this rare teardown case that may
++    // leak the EGLImage handle, which is safer than a GPU use-after-free.
++    bool canFreeAuxSlots = !mCurrentTextureIsAux;
++    if (mCurrentTextureIsAux && mAttached &&
++            eglGetCurrentDisplay() == mEglDisplay &&
++            eglGetCurrentContext() == mEglContext) {
++        status_t auxFenceErr = fenceCurrentAuxTextureLocked();
++        canFreeAuxSlots = (auxFenceErr == NO_ERROR);
++        if (auxFenceErr != NO_ERROR) {
++            GLC_LOGW("abandonLocked: unable to fence auxiliary texture: %d", auxFenceErr);
++        }
++    }
++    if (canFreeAuxSlots) {
++        for (size_t i = 0; i < 2; ++i) {
++            status_t auxErr = freeAuxSlotLocked(i);
++            if (auxErr != NO_ERROR) {
++                GLC_LOGW("abandonLocked: unable to free auxiliary slot %zu: %d", i, auxErr);
++            }
++        }
++        mCurrentTextureIsAux = false;
++        mCurrentAuxSlot = -1;
++    }
++#endif
+     mCurrentTextureImage.clear();
+     ConsumerBase::abandonLocked();
+ }
+-- 
+2.43.0
+
