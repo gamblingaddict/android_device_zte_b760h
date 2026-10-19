@@ -120,3 +120,22 @@ BOARD_BLUETOOTH_BDROID_BUILDCFG_INCLUDE_DIR := $(DEVICE_PATH)/configs/bluetooth
 # SELinux
 BOARD_SEPOLICY_DIRS	+= $(DEVICE_PATH)/configs/sepolicy
 POLICYVERS 		:= 26
+
+# TWRP
+RECOVERY_VARIANT := twrp
+TW_THEME := landscape_hdpi
+BOARD_SUPPRESS_SECURE_ERASE := true # "Some MMCs have VERY slow secure erase - use standard erase instead"
+TW_CUSTOM_CPU_TEMP_PATH := "/sys/devices/virtual/thermal/thermal_zone1/temp"
+
+# Exclusions
+TW_EXCLUDE_TWRPAPP := true
+TW_EXCLUDE_SUPERSU := true
+TW_NO_REBOOT_BOOTLOADER := true
+TW_NO_BATT_PERCENT := true
+TW_NO_SCREEN_TIMEOUT := true
+
+# Inclusions
+TW_INCLUDE_CRYPTO := true
+TW_INCLUDE_NTFS_3G := true
+TW_INCLUDE_FB2PNG := true
+TW_EXTRA_LANGUAGES := true
