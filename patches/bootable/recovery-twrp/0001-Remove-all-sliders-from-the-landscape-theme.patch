@@ -1,0 +1,307 @@
+From a38c0ad35773ece994bfcdf819f1cfca93885561 Mon Sep 17 00:00:00 2001
+From: gamblingaddict <112048350+gamblingaddict@users.noreply.github.com>
+Date: Mon, 19 Oct 2026 21:53:49 +0700
+Subject: [PATCH] Remove all sliders from the landscape theme
+
+Makes it easier to use with remotes.
+---
+ gui/theme/common/landscape.xml | 85 ++++++++++++++++++++--------------
+ 1 file changed, 51 insertions(+), 34 deletions(-)
+
+diff --git a/gui/theme/common/landscape.xml b/gui/theme/common/landscape.xml
+index a3bbfa78..a6c81f17 100755
+--- a/gui/theme/common/landscape.xml
++++ b/gui/theme/common/landscape.xml
+@@ -491,10 +491,11 @@
+ 				</actions>
+ 			</button>
+ 
+-			<slider>
++			<button style="main_button_half_width">
++				<placement x="%col2_x_right%" y="%row15a_y%"/>
+ 				<text>{@swipe_flash=Swipe to confirm Flash}</text>
+ 				<action function="flash">flash_zip</action>
+-			</slider>
++			</button>
+ 
+ 			<action>
+ 				<touch key="back"/>
+@@ -753,7 +754,8 @@
+ 				<action function="set">tw_flash_both_slots=0</action>
+ 			</button>
+ 
+-			<slider>
++			<button style="main_button_half_width">
++				<placement x="%col1_x_left%" y="%row15a_y%"/>
+ 				<text>{@swipe_flash=Swipe to confirm Flash}</text>
+ 				<actions>
+ 					<action function="set">tw_back=flashimage_confirm</action>
+@@ -765,7 +767,7 @@
+ 					<action function="page">action_page</action>
+ 				</actions>
+ 				<action function="flashimage"/>
+-			</slider>
++			</button>
+ 
+ 			<action>
+ 				<touch key="back"/>
+@@ -864,10 +866,11 @@
+ 				<text>{@back_cancel=Press back button to cancel.}</text>
+ 			</text>
+ 
+-			<slider style="slider_centered">
++			<button style="main_button_half_width">
++				<placement x="%center_x%" y="%row15a_y%"/>
+ 				<text>%tw_slider_text%</text>
+ 				<action function="page">action_page</action>
+-			</slider>
++			</button>
+ 
+ 			<action>
+ 				<touch key="back"/>
+@@ -1163,7 +1166,8 @@
+ 				</actions>
+ 			</button>
+ 
+-			<slider>
++			<button style="main_button_half_width">
++				<placement x="%col2_x_right%" y="%row15a_y%"/>
+ 				<text>{@swipe_factory_reset=Swipe to Factory Reset}</text>
+ 				<actions>
+ 					<action function="set">tw_back=wipe</action>
+@@ -1173,7 +1177,7 @@
+ 					<action function="set">tw_complete_text1={@factory_reset_complete=Factory Reset Complete}</action>
+ 					<action function="page">action_page</action>
+ 				</actions>
+-			</slider>
++			</button>
+ 
+ 			<action>
+ 				<touch key="back"/>
+@@ -1225,7 +1229,8 @@
+ 				</actions>
+ 			</button>
+ 
+-			<slider>
++			<button style="main_button_half_width">
++				<placement x="%col2_x_right%" y="%row15a_y%"/>
+ 				<text>{@swipe_wipe=Swipe to Wipe}</text>
+ 				<actions>
+ 					<action function="set">tw_back=advancedwipe</action>
+@@ -1236,7 +1241,7 @@
+ 					<action function="set">tw_complete_text1={@wipe_complete=Wipe Complete}</action>
+ 					<action function="page">action_page</action>
+ 				</actions>
+-			</slider>
++			</button>
+ 
+ 			<action>
+ 				<touch key="home"/>
+@@ -1786,10 +1791,11 @@
+ 				</actions>
+ 			</button>
+ 
+-			<slider>
++			<button style="main_button_half_width">
++				<placement x="%col2_x_right%" y="%row15a_y%"/>
+ 				<text>{@swipe_backup=Swipe to Backup}</text>
+ 				<action function="page">backup_run</action>
+-			</slider>
++			</button>
+ 
+ 			<action>
+ 				<touch key="home"/>
+@@ -1826,13 +1832,14 @@
+ 				<action function="page">decrypt_users</action>
+ 			</button>
+ 
+-			<slider>
++			<button style="main_button_half_width">
++				<placement x="%col2_x_right%" y="%row15a_y%"/>
+ 				<text>{@multiuser_warning_accept=Continue Anyway}</text>
+ 				<actions>
+ 					<action function="set">tw_multiuser_warning_accepted=1</action>
+ 					<action function="page">%tw_multiuser_warning_destination%</action>
+ 				</actions>
+-			</slider>
++			</button>
+ 
+ 			<action>
+ 				<touch key="home"/>
+@@ -2430,10 +2437,11 @@
+ 				</actions>
+ 			</button>
+ 
+-			<slider>
++			<button style="main_button_half_width">
++				<placement x="%col2_x_right%" y="%row15a_y%"/>
+ 				<text>{@swipe_restore=Swipe to Restore}</text>
+ 				<action function="page">restore_run</action>
+-			</slider>
++			</button>
+ 
+ 			<action>
+ 				<touch key="home"/>
+@@ -2923,7 +2931,8 @@
+ 				<action function="page">%tw_back%</action>
+ 			</button>
+ 
+-			<slider>
++			<button style="main_button_half_width">
++				<placement x="%col2_x_right%" y="%row15a_y%"/>
+ 				<text>{@swipe_to_install_app=Swipe to Install TWRP App}</text>
+ 				<actions>
+ 					<action function="set">tw_action=installapp</action>
+@@ -2932,7 +2941,7 @@
+ 					<action function="set">tw_complete_text1={@successful=Successful}</action>
+ 					<action function="page">action_page</action>
+ 				</actions>
+-			</slider>
++			</button>
+ 
+ 			<action>
+ 				<touch key="home"/>
+@@ -3002,14 +3011,15 @@
+ 				<action function="overlay">select_language</action>
+ 			</button>
+ 
+-			<slider>
++			<button style="main_button_half_width">
++				<placement x="%col2_x_right%" y="%row15a_y%"/>
+ 				<text>{@swipe_allow_mod=Swipe to Allow Modifications}</text>
+ 				<actions>
+ 					<action function="mountsystemtoggle">0</action>
+ 					<action function="set">tw_page_done=1</action>
+ 					<action function="page">%tw_back%</action>
+ 				</actions>
+-			</slider>
++			</button>
+ 		</page>
+ 
+ 		<page name="settings">
+@@ -3459,7 +3469,8 @@
+ 				<data variable="tw_include_kernel_log" value="1"/>
+ 			</checkbox>
+ 
+-			<slider>
++			<button style="main_button_half_width">
++				<placement x="%col2_x_right%" y="%row15a_y%"/>
+ 				<text>{@copying_log=Copy Logs to SD Card}</text>
+ 				<actions>
+ 					<action function="set">tw_back=advanced</action>
+@@ -3468,7 +3479,7 @@
+ 					<action function="set">tw_complete_text1={@copy_log_complete=Logs Copy Completed}</action>
+ 					<action function="page">action_page</action>
+ 				</actions>
+-			</slider>
++			</button>
+ 
+ 			<action>
+ 				<touch key="home"/>
+@@ -3799,7 +3810,8 @@
+ 				<action function="set">tw_sdpart_file_system=ext4</action>
+ 			</button>
+ 
+-			<slider style="slider_centered">
++			<button style="main_button_half_width">
++				<placement x="%center_x%" y="%row15a_y%"/>
+ 				<text>{@swipe_part_sd=Swipe to Partition}</text>
+ 				<action function="page">partsdcardaction</action>
+ 				<actions>
+@@ -3813,7 +3825,7 @@
+ 					<action function="set">tw_complete_text1={@part_sd_complete=Partitioning Complete}</action>
+ 					<action function="page">action_page</action>
+ 				</actions>
+-			</slider>
++			</button>
+ 
+ 			<action>
+ 				<touch key="home"/>
+@@ -4002,7 +4014,8 @@
+ 				<action function="page">repackselect</action>
+ 			</button>
+ 
+-			<slider style="slider_centered">
++			<button style="main_button_half_width">
++				<placement x="%center_x%" y="%row15a_y%"/>
+ 				<text>{@swipe_to_install=Swipe to Install}</text>
+ 				<actions>
+ 					<action function="set">tw_back=advanced</action>
+@@ -4013,7 +4026,7 @@
+ 					<action function="set">tw_complete_text1={@install_complete=Install Complete}</action>
+ 					<action function="page">action_page</action>
+ 				</actions>
+-			</slider>
++			</button>
+ 
+ 			<action>
+ 				<touch key="back"/>
+@@ -4034,10 +4047,11 @@
+ 				<placement x="%center_x%" y="%row8_y%" placement="4"/>
+ 			</image>
+ 
+-			<slider style="slider_centered">
++			<button style="main_button_half_width">
++				<placement x="%center_x%" y="%row17a_y%"/>
+ 				<text>{@swipe_to_unlock=Swipe to Unlock}</text>
+ 				<action function="overlay"/>
+-			</slider>
++			</button>
+ 
+ 			<action>
+ 				<touch key="power"/>
+@@ -4503,10 +4517,11 @@ edi				<conditions>
+ 				<text>{@back_cancel=Press back button to cancel.}</text>
+ 			</text>
+ 
+-			<slider style="slider_centered">
++			<button style="main_button_half_width">
++				<placement x="%center_x%" y="%row15a_y%"/>
+ 				<text>{@swipe_to_confirm=Swipe to Confirm}</text>
+ 				<action function="page">filemanageraction</action>
+-			</slider>
++			</button>
+ 
+ 			<action>
+ 				<touch key="back"/>
+@@ -5187,7 +5202,8 @@ edi				<conditions>
+ 				<data variable="tw_wipe_cache"/>
+ 			</checkbox>
+ 
+-			<slider style="slider_centered">
++			<button style="main_button_half_width">
++				<placement x="%center_x%" y="%row15a_y%"/>
+ 				<text>{@swipe_to_sideload=Swipe to Start Sideload}</text>
+ 				<actions>
+ 					<action function="set">tw_back=advanced</action>
+@@ -5200,7 +5216,7 @@ edi				<conditions>
+ 					<action function="set">tw_cancel_action=adbsideloadcancel</action>
+ 					<action function="page">action_page</action>
+ 				</actions>
+-			</slider>
++			</button>
+ 
+ 			<action>
+ 				<touch key="home"/>
+@@ -5241,7 +5257,8 @@ edi				<conditions>
+ 				<text>{@fix_contexts_note3=your device to not boot properly.}</text>
+ 			</text>
+ 
+-			<slider style="slider_centered">
++			<button style="main_button_half_width">
++				<placement x="%center_x%" y="%row15a_y%"/>
+ 				<text>{@swipe_to_fix_contexts=Swipe to Fix Contexts}</text>
+ 				<actions>
+ 					<action function="set">tw_back=advanced</action>
+@@ -5252,7 +5269,7 @@ edi				<conditions>
+ 					<action function="set">tw_show_reboot=1</action>
+ 					<action function="page">action_page</action>
+ 				</actions>
+-			</slider>
++			</button>
+ 
+ 			<action>
+ 				<touch key="home"/>
+-- 
+2.43.0
+
