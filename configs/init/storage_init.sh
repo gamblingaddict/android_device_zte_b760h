@@ -1,6 +1,18 @@
 #!/sbin/busybox_static sh
-if [ -e /sys/block/mmcblk0/mmcblk0p8 ]; then
-    /sbin/busybox_static cp /fstab.mt8127.std /fstab.mt8127
+if [ "$1" = "recovery" ]; then
+    BB=/sbin/busybox
+    FSTAB_OUT=/etc/recovery.fstab
+    FSTAB_STD=/recovery.fstab.std
+    FSTAB_REPART=/recovery.fstab.repart
 else
-    /sbin/busybox_static cp /fstab.mt8127.repart /fstab.mt8127
+    BB=/sbin/busybox_static
+    FSTAB_OUT=/fstab.mt8127
+    FSTAB_STD=/fstab.mt8127.std
+    FSTAB_REPART=/fstab.mt8127.repart
+fi
+
+if [ -e /sys/block/mmcblk0/mmcblk0p8 ]; then
+    $BB cp "$FSTAB_STD" "$FSTAB_OUT"
+else
+    $BB cp "$FSTAB_REPART" "$FSTAB_OUT"
 fi

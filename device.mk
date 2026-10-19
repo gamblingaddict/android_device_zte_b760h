@@ -41,6 +41,10 @@ PRODUCT_COPY_FILES += \
 PRODUCT_COPY_FILES += \
     $(call find-copy-subdir-files,*,${DEVICE_PATH}/configs/init,root)
 
+# Recovery
+PRODUCT_COPY_FILES += \
+    $(call find-copy-subdir-files,*,${DEVICE_PATH}/configs/recovery,$(TARGET_RECOVERY_ROOT_OUT))
+
 # WiFi
 PRODUCT_PACKAGES += \
     libwpa_client \
