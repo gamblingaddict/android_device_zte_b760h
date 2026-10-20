@@ -6,7 +6,7 @@ LOCAL_SRC_FILES:= ir_daemon.c
 LOCAL_MODULE := ir_daemon
 LOCAL_CFLAGS := -std=c99
 LOCAL_SHARED_LIBRARIES := libc
-
+LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR)/bin
 include $(BUILD_EXECUTABLE)
 
 include $(CLEAR_VARS)

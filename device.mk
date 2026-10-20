@@ -94,6 +94,9 @@ PRODUCT_PACKAGES += \
     ir_daemon \
     ir_daemon_recovery
 
+PRODUCT_COPY_FILES += \
+    $(DEVICE_PATH)/libs/remote/ir_custom.template:$(TARGET_COPY_OUT_VENDOR)/etc/ir_custom.conf
+
 # HDMI
 PRODUCT_PACKAGES += \
     hdmi_helper

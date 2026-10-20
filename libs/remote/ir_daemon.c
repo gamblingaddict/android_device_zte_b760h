@@ -35,6 +35,7 @@
  * key events.
  */
 
+#include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <linux/input.h>
@@ -42,6 +43,7 @@
 #include <poll.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <syslog.h>
@@ -55,6 +57,9 @@
 #define LIRC_DEVICE       "/dev/lirc0"
 #define UINPUT_DEVICE     "/dev/uinput"
 #define DEVICE_NAME       "nec_remote_virtual"
+#define CUSTOM_MAP_PATH   "/vendor/etc/ir_custom.conf"
+#define CUSTOM_NAME_MAX   64
+#define CUSTOM_LINE_MAX   256
 
 /* How long to wait, in milliseconds, after the last record for a given
  * scancode before deciding the button has been released. */
@@ -76,11 +81,272 @@ struct ir_record {
     uint32_t keycode;      // The keycodes the kernel sends are usually invalid.
 } __attribute__((packed));
 
+/* Custom mappings are additive: an entry can only claim a scancode that
+ * is not already present in ir_map.h. The map is loaded once at startup. */
+struct custom_scancode_entry {
+    struct scancode_map mapping;
+    char name[CUSTOM_NAME_MAX];
+};
+
+static struct custom_scancode_entry g_custom_map[256];
+static size_t g_custom_map_len = 0;
+
+struct named_keycode {
+    const char *name;
+    uint16_t keycode;
+};
+
+/* Common Linux input-event key names accepted by ir_custom.conf. Names may
+ * be written with or without the KEY_ prefix. Numeric keycodes are accepted
+ * too, so keys absent from this convenience table remain usable. */
+static const struct named_keycode kNamedKeycodes[] = {
+    { "KEY_0", KEY_0 }, { "KEY_1", KEY_1 }, { "KEY_2", KEY_2 },
+    { "KEY_3", KEY_3 }, { "KEY_4", KEY_4 }, { "KEY_5", KEY_5 },
+    { "KEY_6", KEY_6 }, { "KEY_7", KEY_7 }, { "KEY_8", KEY_8 },
+    { "KEY_9", KEY_9 },
+    { "KEY_A", KEY_A }, { "KEY_B", KEY_B }, { "KEY_C", KEY_C },
+    { "KEY_D", KEY_D }, { "KEY_E", KEY_E }, { "KEY_F", KEY_F },
+    { "KEY_G", KEY_G }, { "KEY_H", KEY_H }, { "KEY_I", KEY_I },
+    { "KEY_J", KEY_J }, { "KEY_K", KEY_K }, { "KEY_L", KEY_L },
+    { "KEY_M", KEY_M }, { "KEY_N", KEY_N }, { "KEY_O", KEY_O },
+    { "KEY_P", KEY_P }, { "KEY_Q", KEY_Q }, { "KEY_R", KEY_R },
+    { "KEY_S", KEY_S }, { "KEY_T", KEY_T }, { "KEY_U", KEY_U },
+    { "KEY_V", KEY_V }, { "KEY_W", KEY_W }, { "KEY_X", KEY_X },
+    { "KEY_Y", KEY_Y }, { "KEY_Z", KEY_Z },
+    { "KEY_ENTER", KEY_ENTER }, { "KEY_ESC", KEY_ESC },
+    { "KEY_BACKSPACE", KEY_BACKSPACE }, { "KEY_TAB", KEY_TAB },
+    { "KEY_SPACE", KEY_SPACE }, { "KEY_MINUS", KEY_MINUS },
+    { "KEY_EQUAL", KEY_EQUAL }, { "KEY_LEFTBRACE", KEY_LEFTBRACE },
+    { "KEY_RIGHTBRACE", KEY_RIGHTBRACE }, { "KEY_BACKSLASH", KEY_BACKSLASH },
+    { "KEY_SEMICOLON", KEY_SEMICOLON }, { "KEY_APOSTROPHE", KEY_APOSTROPHE },
+    { "KEY_GRAVE", KEY_GRAVE }, { "KEY_COMMA", KEY_COMMA },
+    { "KEY_DOT", KEY_DOT }, { "KEY_SLASH", KEY_SLASH },
+    { "KEY_CAPSLOCK", KEY_CAPSLOCK }, { "KEY_SYSRQ", KEY_SYSRQ },
+    { "KEY_SCROLLLOCK", KEY_SCROLLLOCK }, { "KEY_PAUSE", KEY_PAUSE },
+    { "KEY_INSERT", KEY_INSERT }, { "KEY_HOME", KEY_HOME },
+    { "KEY_PAGEUP", KEY_PAGEUP }, { "KEY_DELETE", KEY_DELETE },
+    { "KEY_END", KEY_END }, { "KEY_PAGEDOWN", KEY_PAGEDOWN },
+    { "KEY_RIGHT", KEY_RIGHT }, { "KEY_LEFT", KEY_LEFT },
+    { "KEY_DOWN", KEY_DOWN }, { "KEY_UP", KEY_UP },
+    { "KEY_NUMLOCK", KEY_NUMLOCK },
+    { "KEY_KP0", KEY_KP0 }, { "KEY_KP1", KEY_KP1 },
+    { "KEY_KP2", KEY_KP2 }, { "KEY_KP3", KEY_KP3 },
+    { "KEY_KP4", KEY_KP4 }, { "KEY_KP5", KEY_KP5 },
+    { "KEY_KP6", KEY_KP6 }, { "KEY_KP7", KEY_KP7 },
+    { "KEY_KP8", KEY_KP8 }, { "KEY_KP9", KEY_KP9 },
+    { "KEY_KPDOT", KEY_KPDOT }, { "KEY_KPENTER", KEY_KPENTER },
+    { "KEY_KPPLUS", KEY_KPPLUS }, { "KEY_KPMINUS", KEY_KPMINUS },
+    { "KEY_KPASTERISK", KEY_KPASTERISK }, { "KEY_KPSLASH", KEY_KPSLASH },
+    { "KEY_F1", KEY_F1 }, { "KEY_F2", KEY_F2 },
+    { "KEY_F3", KEY_F3 }, { "KEY_F4", KEY_F4 },
+    { "KEY_F5", KEY_F5 }, { "KEY_F6", KEY_F6 },
+    { "KEY_F7", KEY_F7 }, { "KEY_F8", KEY_F8 },
+    { "KEY_F9", KEY_F9 }, { "KEY_F10", KEY_F10 },
+    { "KEY_F11", KEY_F11 }, { "KEY_F12", KEY_F12 },
+    { "KEY_POWER", KEY_POWER }, { "KEY_MUTE", KEY_MUTE },
+    { "KEY_VOLUMEUP", KEY_VOLUMEUP }, { "KEY_VOLUMEDOWN", KEY_VOLUMEDOWN },
+    { "KEY_PLAYPAUSE", KEY_PLAYPAUSE }, { "KEY_STOP", KEY_STOP },
+    { "KEY_REWIND", KEY_REWIND }, { "KEY_FASTFORWARD", KEY_FASTFORWARD },
+    { "KEY_PLAY", KEY_PLAY }, { "KEY_RECORD", KEY_RECORD },
+    { "KEY_NEXTSONG", KEY_NEXTSONG }, { "KEY_PREVIOUSSONG", KEY_PREVIOUSSONG },
+    { "KEY_MENU", KEY_MENU }, { "KEY_BACK", KEY_BACK },
+    { "KEY_SELECT", KEY_SELECT }, { "KEY_OK", KEY_OK },
+    { "KEY_HOMEPAGE", KEY_HOMEPAGE }, { "KEY_SEARCH", KEY_SEARCH },
+    { "KEY_INFO", KEY_INFO }, { "KEY_SETUP", KEY_SETUP },
+    { "KEY_TV", KEY_TV }, { "KEY_AUDIO", KEY_AUDIO },
+    { "KEY_SUBTITLE", KEY_SUBTITLE }, { "KEY_TEXT", KEY_TEXT },
+    { "KEY_EPG", KEY_EPG }, { "KEY_CHANNEL", KEY_CHANNEL },
+    { "KEY_RED", KEY_RED }, { "KEY_GREEN", KEY_GREEN },
+    { "KEY_YELLOW", KEY_YELLOW }, { "KEY_BLUE", KEY_BLUE },
+    { "KEY_FAVORITES", KEY_FAVORITES },
+    { "KEY_DIGITS", KEY_DIGITS }, { "KEY_CHANNELUP", KEY_CHANNELUP },
+    { "KEY_CHANNELDOWN", KEY_CHANNELDOWN }, { "KEY_GOTO", KEY_GOTO },
+    { "KEY_APPSELECT", KEY_APPSELECT }, { "KEY_F13", KEY_F13 },
+    { "KEY_F14", KEY_F14 }, { "KEY_F15", KEY_F15 },
+    { "KEY_F16", KEY_F16 }, { "KEY_F17", KEY_F17 },
+    { "KEY_F18", KEY_F18 }, { "KEY_F19", KEY_F19 },
+    { "KEY_F20", KEY_F20 }, { "KEY_F21", KEY_F21 },
+    { "KEY_F22", KEY_F22 }, { "KEY_F23", KEY_F23 },
+    { "KEY_F24", KEY_F24 },
+    { "BTN_LEFT", BTN_LEFT }, { "BTN_RIGHT", BTN_RIGHT },
+    { "BTN_MIDDLE", BTN_MIDDLE },
+};
+
+static int is_builtin_scancode(uint8_t scancode) {
+    for (size_t i = 0; i < kScancodeMapLen; i++) {
+        if (kScancodeMap[i].scancode == scancode) return 1;
+    }
+    return 0;
+}
+
+static int parse_unsigned_number(const char *text, unsigned long *value_out) {
+    char *end = NULL;
+    int base = 10;
+    unsigned long value;
+
+    if (text[0] == '0' && (text[1] == 'x' || text[1] == 'X')) base = 16;
+    errno = 0;
+    value = strtoul(text, &end, base);
+    if (errno != 0 || end == text || *end != '\0') return -1;
+    *value_out = value;
+    return 0;
+}
+
+static int named_keycode(const char *name, uint16_t *keycode_out) {
+    char with_prefix[ CUSTOM_NAME_MAX ];
+    const char *candidate = name;
+
+    for (size_t i = 0; i < sizeof(kNamedKeycodes) / sizeof(kNamedKeycodes[0]); i++) {
+        if (strcmp(candidate, kNamedKeycodes[i].name) == 0) {
+            *keycode_out = kNamedKeycodes[i].keycode;
+            return 0;
+        }
+    }
+
+    if (strncmp(name, "KEY_", 4) != 0 && strlen(name) + 4 < sizeof(with_prefix)) {
+        snprintf(with_prefix, sizeof(with_prefix), "KEY_%s", name);
+        candidate = with_prefix;
+        for (size_t i = 0; i < sizeof(kNamedKeycodes) / sizeof(kNamedKeycodes[0]); i++) {
+            if (strcmp(candidate, kNamedKeycodes[i].name) == 0) {
+                *keycode_out = kNamedKeycodes[i].keycode;
+                return 0;
+            }
+        }
+    }
+    return -1;
+}
+
+static int parse_keycode(const char *text, uint16_t *keycode_out) {
+    unsigned long value;
+    if (parse_unsigned_number(text, &value) != 0) {
+        if (named_keycode(text, keycode_out) != 0) return -1;
+        value = *keycode_out;
+    }
+    if (value == KEY_RESERVED || value > KEY_MAX) return -1;
+    *keycode_out = (uint16_t)value;
+    return 0;
+}
+
+static int custom_has_scancode(uint8_t scancode) {
+    for (size_t i = 0; i < g_custom_map_len; i++) {
+        if (g_custom_map[i].mapping.scancode == scancode) return 1;
+    }
+    return 0;
+}
+
+static void load_custom_map(void) {
+    FILE *fp = fopen(CUSTOM_MAP_PATH, "r");
+    if (!fp) {
+        if (errno == ENOENT) {
+            syslog(LOG_INFO, "no custom map at %s; using built-in mappings only",
+                   CUSTOM_MAP_PATH);
+        } else {
+            syslog(LOG_WARNING, "cannot open custom map %s: %s; using built-in mappings only",
+                   CUSTOM_MAP_PATH, strerror(errno));
+        }
+        return;
+    }
+
+    char line[CUSTOM_LINE_MAX];
+    unsigned long line_number = 0;
+    while (fgets(line, sizeof(line), fp) != NULL) {
+        line_number++;
+        if (!strchr(line, '\n') && !feof(fp)) {
+            int ch;
+            while ((ch = fgetc(fp)) != '\n' && ch != EOF) {}
+            syslog(LOG_WARNING, "%s:%lu: line too long; ignoring",
+                   CUSTOM_MAP_PATH, line_number);
+            continue;
+        }
+
+        char *comment = strchr(line, '#');
+        if (comment) *comment = '\0';
+        char *cursor = line;
+        while (*cursor && isspace((unsigned char)*cursor)) cursor++;
+        if (*cursor == '\0') continue;
+
+        char *saveptr = NULL;
+        char *scancode_text = strtok_r(cursor, " \t\r\n", &saveptr);
+        char *keycode_text = strtok_r(NULL, " \t\r\n", &saveptr);
+        if (!scancode_text || !keycode_text) {
+            syslog(LOG_WARNING, "%s:%lu: expected '<scancode> <keycode> [label]'; ignoring",
+                   CUSTOM_MAP_PATH, line_number);
+            continue;
+        }
+
+        unsigned long scancode_value;
+        uint16_t keycode;
+        if (parse_unsigned_number(scancode_text, &scancode_value) != 0 ||
+            scancode_value > 0xff) {
+            syslog(LOG_WARNING, "%s:%lu: invalid 8-bit scancode '%s'; ignoring",
+                   CUSTOM_MAP_PATH, line_number, scancode_text);
+            continue;
+        }
+        if (parse_keycode(keycode_text, &keycode) != 0) {
+            syslog(LOG_WARNING, "%s:%lu: invalid keycode '%s'; use a known KEY_* name or numeric code; ignoring",
+                   CUSTOM_MAP_PATH, line_number, keycode_text);
+            continue;
+        }
+
+        uint8_t scancode = (uint8_t)scancode_value;
+        if (is_builtin_scancode(scancode)) {
+            syslog(LOG_WARNING,
+                   "%s:%lu: scancode 0x%02x is built in and cannot be overridden; ignoring",
+                   CUSTOM_MAP_PATH, line_number, scancode);
+            continue;
+        }
+        if (custom_has_scancode(scancode)) {
+            syslog(LOG_WARNING,
+                   "%s:%lu: duplicate custom scancode 0x%02x; first mapping wins",
+                   CUSTOM_MAP_PATH, line_number, scancode);
+            continue;
+        }
+        if (g_custom_map_len >= sizeof(g_custom_map) / sizeof(g_custom_map[0])) {
+            syslog(LOG_WARNING, "%s:%lu: custom map is full; ignoring entry",
+                   CUSTOM_MAP_PATH, line_number);
+            continue;
+        }
+
+        struct custom_scancode_entry *entry = &g_custom_map[g_custom_map_len++];
+        entry->mapping.scancode = scancode;
+        entry->mapping.keycode = keycode;
+        char *label = saveptr;
+        while (label && *label && isspace((unsigned char)*label)) label++;
+        if (label && *label) {
+            size_t label_len = strlen(label);
+            while (label_len > 0 && isspace((unsigned char)label[label_len - 1]))
+                label[--label_len] = '\0';
+            snprintf(entry->name, sizeof(entry->name), "%s", label);
+        } else {
+            snprintf(entry->name, sizeof(entry->name), "%s", keycode_text);
+        }
+        entry->mapping.name = entry->name;
+        syslog(LOG_INFO, "custom mapping: scancode 0x%02x -> keycode %u (%s)",
+               scancode, keycode, entry->name);
+    }
+
+    if (ferror(fp)) {
+        syslog(LOG_WARNING, "error while reading custom map %s: %s",
+               CUSTOM_MAP_PATH, strerror(errno));
+    }
+    fclose(fp);
+    syslog(LOG_INFO, "loaded %zu custom scancode mapping(s) from %s",
+           g_custom_map_len, CUSTOM_MAP_PATH);
+}
+
 static int raw_to_keycode(uint8_t raw, const char **name_out) {
+    /* Built-in mappings always win, even if a config file is malformed or
+     * attempts to define the same scancode. */
     for (size_t i = 0; i < kScancodeMapLen; i++) {
         if (kScancodeMap[i].scancode == raw) {
             if (name_out) *name_out = kScancodeMap[i].name;
             return kScancodeMap[i].keycode;
+        }
+    }
+    for (size_t i = 0; i < g_custom_map_len; i++) {
+        if (g_custom_map[i].mapping.scancode == raw) {
+            if (name_out) *name_out = g_custom_map[i].mapping.name;
+            return g_custom_map[i].mapping.keycode;
         }
     }
     return -1;
@@ -129,6 +395,14 @@ static int uinput_open_and_register(void) {
     for (size_t i = 0; i < kScancodeMapLen; i++) {
         int keycode = kScancodeMap[i].keycode;
         /* In mouse mode the d-pad and center never come out as keys. */
+        if (g_mouse_emu && is_mouse_key(keycode)) continue;
+        if (ioctl(fd, UI_SET_KEYBIT, keycode) < 0)
+            goto ioctl_fail;
+    }
+    /* Custom mappings must be registered with uinput as well as translated
+     * in raw_to_keycode(), or the kernel may reject their key events. */
+    for (size_t i = 0; i < g_custom_map_len; i++) {
+        int keycode = g_custom_map[i].mapping.keycode;
         if (g_mouse_emu && is_mouse_key(keycode)) continue;
         if (ioctl(fd, UI_SET_KEYBIT, keycode) < 0)
             goto ioctl_fail;
@@ -267,7 +541,9 @@ static void usage(const char *argv0) {
     fprintf(stderr,
         "Usage: %s [--mouse-emu]\n"
         "\n"
-        "  --mouse-emu   d-pad moves a mouse pointer, center is left click\n",
+        "  --mouse-emu   d-pad moves a mouse pointer, center is left click\n"
+        "\n"
+        "  Optional additive mappings are read from " CUSTOM_MAP_PATH "\n",
         argv0);
 }
 
@@ -288,6 +564,7 @@ int main(int argc, char **argv) {
     openlog("ir_daemon", LOG_PID | LOG_CONS, LOG_DAEMON);
     syslog(LOG_INFO, "starting, reading %s%s", LIRC_DEVICE,
            g_mouse_emu ? " (mouse emulation on)" : "");
+    load_custom_map();
 
     int lirc_fd = open(LIRC_DEVICE, O_RDONLY);
     if (lirc_fd < 0) {

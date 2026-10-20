@@ -151,7 +151,7 @@ service nvram_daemon /system/bin/nvram_daemon
     group system
     oneshot
 
-service ir_daemon /system/bin/ir_daemon
+service ir_daemon /vendor/bin/ir_daemon
     class main
     user root
     group root

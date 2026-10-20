@@ -1,0 +1,14 @@
+# Custom IR scancode mappings
+#
+# Add mappings here for remote buttons not handled by the
+# built-in map. Built-in mappings always take priority and
+# cannot be overridden.
+#
+# Format:
+# <scancode> <keycode> [description]
+#
+# Use hexadecimal scancodes and Linux key names or numeric
+# keycodes. Restart ir_daemon after making changes.
+#
+# Do not modify ir_map.h entries here; custom mappings are
+# additive only.
