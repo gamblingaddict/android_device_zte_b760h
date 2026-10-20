@@ -1,0 +1,42 @@
+From f15586f305c3dfdc54869aae85d0466724cbf9ff Mon Sep 17 00:00:00 2001
+From: electrikjesus <electrikjesus@gmail.com>
+Date: Tue, 20 Oct 2026 13:34:19 +0700
+Subject: [PATCH] inputflinger: Allow setting right mouse as back
+
+Allows overriding AMOTION_EVENT_BUTTON_SECONDARY with AMOTION_EVENT_BUTTON_BACK, using a property trigger.
+
+Change-Id: I154fbbd9d7c60723171922c80ae87a434f12ad8b
+---
+ services/inputflinger/InputReader.cpp | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/services/inputflinger/InputReader.cpp b/services/inputflinger/InputReader.cpp
+index 7f8457e..365e3a4 100644
+--- a/services/inputflinger/InputReader.cpp
++++ b/services/inputflinger/InputReader.cpp
+@@ -45,6 +45,7 @@
+ #include "InputReader.h"
+ 
+ #include <cutils/log.h>
++#include <cutils/properties.h>
+ #include <input/Keyboard.h>
+ #include <input/VirtualKeyMap.h>
+ 
+@@ -1295,7 +1296,13 @@ uint32_t CursorButtonAccumulator::getButtonState() const {
+         result |= AMOTION_EVENT_BUTTON_PRIMARY;
+     }
+     if (mBtnRight) {
+-        result |= AMOTION_EVENT_BUTTON_SECONDARY;
++        char mBtnRightState[PROPERTY_VALUE_MAX] = {0};
++        property_get("persist.sys.mouse.rightasback", mBtnRightState, "false");
++        if (strcmp(mBtnRightState, "true") == 0) {
++         result |= AMOTION_EVENT_BUTTON_BACK;
++        } else {
++         result |= AMOTION_EVENT_BUTTON_SECONDARY;
++        }
+     }
+     if (mBtnMiddle) {
+         result |= AMOTION_EVENT_BUTTON_TERTIARY;
+-- 
+2.43.0
+
