@@ -1,0 +1,32 @@
+From a3ce979b09f08e2f876d3d6e0ddb29ca71835048 Mon Sep 17 00:00:00 2001
+From: gamblingaddict <112048350+gamblingaddict@users.noreply.github.com>
+Date: Tue, 20 Oct 2026 10:33:22 +0700
+Subject: [PATCH] Compile fix
+
+---
+ .../include/bootloader_message/bootloader_message.h         | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/bootloader_message/include/bootloader_message/bootloader_message.h b/bootloader_message/include/bootloader_message/bootloader_message.h
+index 29f56018..50407698 100644
+--- a/bootloader_message/include/bootloader_message/bootloader_message.h
++++ b/bootloader_message/include/bootloader_message/bootloader_message.h
+@@ -184,10 +184,14 @@ struct bootloader_control {
+     uint32_t crc32_le;
+ } __attribute__((packed));
+ 
+-#if (__STDC_VERSION__ >= 201112L) || defined(__cplusplus)
++#ifdef __cplusplus
+ static_assert(sizeof(struct bootloader_control) ==
+               sizeof(((struct bootloader_message_ab *)0)->slot_suffix),
+               "struct bootloader_control has wrong size");
++#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
++_Static_assert(sizeof(struct bootloader_control) ==
++               sizeof(((struct bootloader_message_ab *)0)->slot_suffix),
++               "struct bootloader_control has wrong size");
+ #endif
+ 
+ #ifdef __cplusplus
+-- 
+2.43.0
+

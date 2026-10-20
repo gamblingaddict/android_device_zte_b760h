@@ -43,7 +43,7 @@ PRODUCT_COPY_FILES += \
 
 # Recovery
 PRODUCT_COPY_FILES += \
-    $(call find-copy-subdir-files,*,${DEVICE_PATH}/configs/recovery,$(TARGET_RECOVERY_ROOT_OUT))
+    $(call find-copy-subdir-files,*,${DEVICE_PATH}/configs/recovery,recovery/root)
 
 # WiFi
 PRODUCT_PACKAGES += \
