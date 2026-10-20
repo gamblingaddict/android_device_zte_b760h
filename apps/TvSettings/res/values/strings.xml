@@ -112,7 +112,21 @@
     <!-- Title for preference for Resolution selection. [CHAR LIMIT=50] -->
     <string name="resolution_selection_title">Resolution</string>
 
-        <!-- Title of dialog asking user to confirm before clearing all caches. [CHAR LIMIT=48] -->
+    <string name="system_mouse">Mouse</string>
+    <string name="mouse_right_click_behavior">
+        Right-click behaviour
+    </string>
+    <string-array name="mouse_right_click_behavior_entries">
+        <item>Default</item>
+        <item>Back</item>
+    </string-array>
+
+    <string-array name="mouse_right_click_behavior_values">
+        <item>default</item>
+        <item>back</item>
+    </string-array>
+
+    <!-- Title of dialog asking user to confirm before clearing all caches. [CHAR LIMIT=48] -->
     <string name="device_storage_clear_cache_title">Clear cached data?</string>
     <!-- Message of dialog asking user to confirm before clearing all caches. [CHAR LIMIT=48] -->
     <string name="device_storage_clear_cache_message">This will clear cached data for all apps.</string>

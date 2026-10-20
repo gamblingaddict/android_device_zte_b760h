@@ -82,6 +82,11 @@
             android:title="@string/system_keyboard"
             android:fragment="com.android.tv.settings.system.KeyboardFragment" />
         <Preference
+            android:icon="@drawable/ic_mouse"
+            android:key="mouse"
+            android:title="@string/system_mouse"
+            android:fragment="com.android.tv.settings.system.MouseFragment" />
+        <Preference
             android:icon="@drawable/ic_home"
             android:key="home"
             android:title="@string/system_home" >
