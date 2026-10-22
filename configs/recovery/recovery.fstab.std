@@ -6,6 +6,8 @@
 /logo		emmc	/dev/logo		flags=display="Logo";backup=1;flashimg=1
 /nvram		emmc	/dev/nvram		flags=display="Nvram";backup=1;flashimg=1
 /recovery	emmc	/dev/recovery	flags=display="Recovery";backup=1;flashimg=1
+/ebr1   	emmc	/dev/ebr1   	flags=display="EBR1";backup=1;flashimg=1
+/ebr2   	emmc	/dev/ebr2   	flags=display="EBR2";backup=1;flashimg=1
 /misc	    emmc	/dev/misc		flags=display="Misc"
 
 # System
