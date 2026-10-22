@@ -1,0 +1,54 @@
+From 0c07a6c6c832b5b108b9ef1551cf01f79809422c Mon Sep 17 00:00:00 2001
+From: gamblingaddict <112048350+gamblingaddict@users.noreply.github.com>
+Date: Thu, 22 Oct 2026 16:07:45 +0700
+Subject: [PATCH] Remove background colour in install_start
+
+With it gone, the installer header no longer has white text on a
+white background.
+
+Change-Id: I52b97bdd2b71fc98b47154ada352c9857abfc779
+---
+ res/layout/install_start.xml | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
+
+diff --git a/res/layout/install_start.xml b/res/layout/install_start.xml
+index f8d839f..4fddd51 100644
+--- a/res/layout/install_start.xml
++++ b/res/layout/install_start.xml
+@@ -27,7 +27,6 @@
+ 
+     <!-- title bar -->
+     <LinearLayout android:id="@+id/app_snippet"
+-            android:background="?android:attr/colorPrimary"
+             android:layout_width="match_parent"
+             android:layout_height="?android:attr/actionBarSize"
+             android:orientation="horizontal">
+@@ -60,7 +59,6 @@
+         <TextView android:id="@+id/install_confirm_question"
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+-                android:background="?android:attr/colorPrimary"
+                 android:textAppearance="?android:attr/textAppearanceMedium"
+                 android:text="@string/install_confirm_question"
+                 android:paddingLeft="16dp"
+@@ -69,8 +67,7 @@
+         <View android:id="@+id/spacer"
+                 android:layout_width="match_parent"
+                 android:layout_height="16dp"
+-                android:visibility="gone"
+-                android:background="?android:attr/colorPrimary" />
++                android:visibility="gone" />
+ 
+         <TabHost android:id="@android:id/tabhost"
+                 android:layout_width="match_parent"
+@@ -82,7 +79,6 @@
+                     android:layout_height="match_parent">
+ 
+                 <HorizontalScrollView android:id="@+id/tabscontainer"
+-                        android:background="?android:attr/colorPrimary"
+                         android:layout_width="match_parent"
+                         android:layout_height="wrap_content"
+                         android:fillViewport="true"
+-- 
+2.43.0
+
